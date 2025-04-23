@@ -1,6 +1,6 @@
 import os
 import requests
-from collector import get_latest_cves
+from collector import get_latest_cves, get_latest_pocs
 
 def send_telegram(msg):
     token = os.getenv("TELEGRAM_TOKEN")
@@ -10,7 +10,7 @@ def send_telegram(msg):
     payload = {
         "chat_id": chat_id,
         "text": msg,
-        "parse_mode": "Markdown"  # usar Markdown plano es más tolerante que MarkdownV2
+        "parse_mode": "Markdown"
     }
 
     print(f"📤 Enviando mensaje al bot:\n{msg}\n")
@@ -18,18 +18,16 @@ def send_telegram(msg):
     try:
         response = requests.post(url, data=payload, timeout=10)
         result = response.json()
+        print("📬 Respuesta Telegram:", result)
         if not result.get("ok"):
             print(f"❌ Telegram rechazó el mensaje: {result}")
-        else:
-            print("✅ Mensaje enviado correctamente.")
     except Exception as e:
-        print(f"❌ Error al enviar mensaje: {e}")
+        print(f"❌ Error al enviar mensaje a Telegram: {e}")
 
-# 🔄 Ejecutar el envío
 if __name__ == "__main__":
-    cve_alerts = get_latest_cves(limit=1)
-    for alert in cve_alerts:
+    alerts = get_latest_cves(limit=1) + get_latest_pocs(limit=2)
+    for alert in alerts:
         if alert.strip():
             send_telegram(alert)
         else:
-            print("⚠️ Advertencia: el mensaje está vacío y no fue enviado.")
+            print("⚠️ Advertencia: mensaje vacío, no enviado.")
