@@ -24,4 +24,5 @@ def send_telegram(msg):
         print(f"❌ Error al enviar mensaje a Telegram: {e}")
 
 # Obtener CVEs y enviar alertas
-cve_alerts = get_latest
+cve_alerts = get_latest_cves(limit=1)
+
