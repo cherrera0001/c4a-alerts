@@ -1,0 +1,7 @@
+import requests
+
+token = "7330329737:AAGXo8PRG4D9n9pl2cGlof62xc2F9dYIGlc"
+url = f"https://api.telegram.org/bot{token}/getUpdates"
+
+response = requests.get(url)
+print(response.json())  # Te muestra el chat_id, mensajes, etc.

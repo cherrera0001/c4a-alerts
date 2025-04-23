@@ -1,5 +1,6 @@
 import os
 import requests
+from collector import get_latest_cves
 
 def send_telegram(msg):
     token = os.getenv("TELEGRAM_TOKEN")
@@ -8,7 +9,7 @@ def send_telegram(msg):
     payload = {"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"}
     requests.post(url, data=payload)
 
-# Simple alerta CVE reciente
-cve = requests.get("https://cve.circl.lu/api/last").json()[0]
-mensaje = f"*Nuevo CVE:* {cve['id']}\n📝 {cve['summary']}"
-send_telegram(mensaje)
+# Obtener CVEs y enviar alertas
+cve_alerts = get_latest_cves(limit=1)
+for alert in cve_alerts:
+    send_telegram(alert)
