@@ -10,19 +10,26 @@ def send_telegram(msg):
     payload = {
         "chat_id": chat_id,
         "text": msg,
-        # "parse_mode": "MarkdownV2"  # puedes activarlo si el mensaje está bien escapado
+        "parse_mode": "Markdown"  # usar Markdown plano es más tolerante que MarkdownV2
     }
 
-    print(f"🟡 Enviando mensaje al bot:\n{msg}\n")
+    print(f"📤 Enviando mensaje al bot:\n{msg}\n")
 
     try:
         response = requests.post(url, data=payload, timeout=10)
         result = response.json()
         if not result.get("ok"):
-            print(f"❌ Error en respuesta de Telegram: {result}")
+            print(f"❌ Telegram rechazó el mensaje: {result}")
+        else:
+            print("✅ Mensaje enviado correctamente.")
     except Exception as e:
-        print(f"❌ Error al enviar mensaje a Telegram: {e}")
+        print(f"❌ Error al enviar mensaje: {e}")
 
-# Obtener CVEs y enviar alertas
-cve_alerts = get_latest_cves(limit=1)
-
+# 🔄 Ejecutar el envío
+if __name__ == "__main__":
+    cve_alerts = get_latest_cves(limit=1)
+    for alert in cve_alerts:
+        if alert.strip():
+            send_telegram(alert)
+        else:
+            print("⚠️ Advertencia: el mensaje está vacío y no fue enviado.")
