@@ -1,36 +1,31 @@
-import os
-import re
-import requests
 import logging
+import requests
 from datetime import datetime
-from dotenv import load_dotenv
+from typing import List
+from src.utils import escape_markdown, validate_url
 
-# Configuración
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-load_dotenv()
+CVE_API_URL = "https://cve.circl.lu/api/last"
+POC_SOURCES = [
+    "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/main/latest.json",
+    "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/master/latest.json",
+    "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/gh-pages/latest.json",
+]
 
-def escape_markdown(text):
-    escape_chars = r"_*[]()~`>#+-=|{}.!\\"
-    return re.sub(f"([{re.escape(escape_chars)}])", r"\\\1", text)
 
-def validate_url(url):
-    try:
-        response = requests.head(url, timeout=5, allow_redirects=True)
-        return response.status_code == 200
-    except requests.RequestException as e:
-        logging.warning(f"⚠️ Enlace inválido: {url} - {e}")
-        return False
-
-def get_latest_cves(limit=5):
-    url = "https://cve.circl.lu/api/last"
+def get_latest_cves(limit: int = 5) -> List[str]:
+    """
+    Recupera los últimos CVEs desde CIRCL API que sean del año actual
+    y tengan una severidad CVSS >= 7.0.
+    """
     current_year = str(datetime.now().year)
+
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(CVE_API_URL, timeout=10)
         response.raise_for_status()
         cves = response.json()
 
         if not isinstance(cves, list):
-            logging.warning(f"⚠️ Respuesta inesperada: {cves}")
+            logging.warning("⚠️ Respuesta inesperada de la API de CIRCL.")
             return []
 
         alerts = []
@@ -40,7 +35,7 @@ def get_latest_cves(limit=5):
                 continue
 
             cvss = cve.get("containers", {}).get("cna", {}).get("metrics", [{}])[0].get("cvssV3", {}).get("baseScore", 0)
-            if cvss < 7.0:
+            if not isinstance(cvss, (int, float)) or cvss < 7.0:
                 continue
 
             description = (
@@ -50,54 +45,61 @@ def get_latest_cves(limit=5):
                 .get("value", "Sin descripción")
             )
 
-            alerts.append(
+            alert = (
                 f"🚨 *Nuevo CVE:* `{escape_markdown(cve_id)}`\n"
                 f"📝 {escape_markdown(description)}\n"
                 f"📊 CVSS: {cvss}"
             )
+            alerts.append(alert)
 
             if len(alerts) >= limit:
                 break
 
-        return alerts if alerts else ["✅ No se encontraron vulnerabilidades críticas recientes."]
+        return alerts or ["✅ No se encontraron vulnerabilidades críticas recientes."]
+
     except Exception as e:
         logging.error(f"❌ Error al consultar CVEs: {e}")
         return [f"⚠️ Error al consultar CVEs: {str(e)}"]
 
-def get_latest_pocs(limit=5):
-    sources = [
-        "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/main/latest.json",
-        "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/master/latest.json",
-        "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/gh-pages/latest.json",
-    ]
+
+def get_latest_pocs(limit: int = 5) -> List[str]:
+    """
+    Recupera PoCs recientes desde las fuentes configuradas (PoC-in-GitHub),
+    validando los enlaces y retornando mensajes formateados.
+    """
     alerts = []
 
-    for url in sources:
+    for url in POC_SOURCES:
         try:
             logging.info(f"🔍 Intentando fuente: {url}")
             response = requests.get(url, timeout=10)
             if response.status_code != 200:
                 continue
+
             data = response.json()
             if not isinstance(data, list):
                 continue
 
             for item in data:
-                poc_url = item.get('html_url', '')
+                poc_url = item.get("html_url", "")
                 if not validate_url(poc_url):
                     continue
 
+                cve_id = item.get("cve_id", "Sin ID")
+                description = item.get("description", "Sin descripción")
+
                 alert = (
                     f"🧪 *PoC GitHub*\n"
-                    f"🔍 {escape_markdown(item.get('cve_id', 'Sin ID'))}\n"
-                    f"📝 {escape_markdown(item.get('description', 'Sin descripción'))}\n"
+                    f"🔍 {escape_markdown(cve_id)}\n"
+                    f"📝 {escape_markdown(description)}\n"
                     f"🔗 {poc_url}"
                 )
                 alerts.append(alert)
+
                 if len(alerts) >= limit:
-                    break
-            break  # Detener intentos si una fuente funcionó
+                    return alerts
+
         except Exception as e:
             logging.warning(f"⚠️ Error al consultar {url}: {e}")
 
-    return alerts if alerts else ["✅ No se encontraron PoCs válidos recientes."]
+    return alerts or ["✅ No se encontraron PoCs válidos recientes."]
