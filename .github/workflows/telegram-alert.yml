@@ -2,7 +2,7 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    - cron: '*/50 * * * *'  # Ejecuta cada 500 minutos
+    - cron: '*/50 * * * *'  # Ejecuta cada 50 minutos
   workflow_dispatch:        # Permite ejecución manual
 
 jobs:
@@ -22,10 +22,11 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Ejecutar alerta principal
-        run: python main.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python main.py
