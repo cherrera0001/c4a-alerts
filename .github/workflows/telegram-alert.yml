@@ -22,14 +22,19 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pycryptodome
+          pip install sentence-transformers --no-deps
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy scikit-learn
 
-      - name: Run threat alerts
+      - name: Ejecutar alerta principal
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-          GIST_ID: ${{ secrets.GIST_ID }}
-          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ENABLE_OPENAI: "false"  # Desactivado por defecto
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          HF_HUB_DISABLE_PROGRESS_BARS: "1"
         run: python main.py
