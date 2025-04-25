@@ -2,8 +2,8 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    - cron: '*/50 * * * *'
-  workflow_dispatch:
+    - cron: '*/50 * * * *'  # Ejecuta cada 50 minutos
+  workflow_dispatch:        # Permite ejecución manual
 
 jobs:
   send_alerts:
@@ -19,7 +19,10 @@ jobs:
           python-version: '3.10'
 
       - name: Instalar dependencias
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pycryptodome
 
       - name: Run threat alerts
         env:
