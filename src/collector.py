@@ -15,7 +15,7 @@ POC_SOURCES = [
 def get_latest_cves(limit: int = 5) -> List[str]:
     """
     Recupera los últimos CVEs desde CIRCL API que sean del año actual
-    y tengan una severidad CVSS >= 7.0.
+    y tengan una severidad CVSS >= 5.0.
     """
     current_year = str(datetime.now().year)
 
