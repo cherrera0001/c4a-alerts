@@ -13,25 +13,6 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Harden Runner
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            api.telegram.org:443
-            cve.circl.lu:443
-            raw.githubusercontent.com:443
-            www.reddit.com:443
-            www.exploit-db.com:443
-            www.cisa.gov:443
-            attack.mitre.org:443
-            stepsecurity.io:443
-            cert.europa.eu:443
-            www.incibe.es:443
-            www.jpcert.or.jp:443
-            www.ncsc.gov.uk:443
-
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
