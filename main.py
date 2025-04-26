@@ -1,41 +1,98 @@
 import os
-import logging
+import sys
+from dotenv import load_dotenv
+from src.logger import logger, info, warning, error
+from src.sources.mitre import fetch_mitre_techniques
+from src.sources.cisa import fetch_cisa_alerts
+from src.sources.stepsecurity import fetch_stepsecurity_posts
+from src.sources.cert import fetch_cert_alerts
+from src.sources.threatfeeds import fetch_threat_feeds
+from src.sources.reddit import fetch_reddit_posts
+from src.sources.exploitdb import fetch_exploitdb_alerts
+from src.collector import get_latest_cves, get_latest_pocs
 from src.manager import ThreatAlertManager
+from src.telegram_bot import TelegramBot
 
-# Configuraciones para minimizar advertencias de librerías
+# Configurar entorno HuggingFace para evitar warnings
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
-logger = logging.getLogger("c4a-alerts")
+# Cargar variables de entorno
+load_dotenv()
 
-def main():
-    logger.info("🚀 Starting C4A Alerts system...")
+def run_alerts() -> None:
+    """
+    Función principal para recolectar, procesar y enviar alertas.
+    """
+    info("\ud83d\ude80 Starting C4A Alerts system...")
 
-    alert_manager = ThreatAlertManager()
-    successful_sources = 0
+    # Inicializar manager de alertas
+    manager = ThreatAlertManager()
 
-    sources = {
-        "CVE": alert_manager.fetch_cve_alerts,
-        "CERT": alert_manager.fetch_cert_alerts,
-        "Reddit": alert_manager.fetch_reddit_alerts,
-    }
+    try:
+        # Recolectar alertas de diferentes fuentes
+        cve_data = get_latest_cves(limit=10)
+        poc_data = get_latest_pocs(limit=10)
+        mitre_data = fetch_mitre_techniques(limit=5)
+        cisa_data = fetch_cisa_alerts(limit=5)
+        stepsecurity_data = fetch_stepsecurity_posts(limit=3)
+        cert_data = fetch_cert_alerts(limit=10)
+        threatfeeds_data = fetch_threat_feeds(limit=10)
+        reddit_data = fetch_reddit_posts(limit=5)
+        exploitdb_data = fetch_exploitdb_alerts(limit=5)
 
-    for source_name, fetch_function in sources.items():
-        try:
-            if fetch_function():
-                successful_sources += 1
-                logger.info(f"✅ {source_name} alerts fetched successfully.")
-            else:
-                logger.warning(f"⚠️ {source_name} returned no alerts.")
-        except Exception as e:
-            logger.error(f"❌ Error fetching {source_name} alerts: {e}")
+        # Agregar alertas al manager
+        manager.add_alerts(cve_data, "CVE")
+        manager.add_alerts(poc_data, "PoC")
+        manager.add_alerts(mitre_data, "MITRE ATT&CK")
+        manager.add_alerts(cisa_data, "CISA")
+        manager.add_alerts(stepsecurity_data, "StepSecurity")
+        manager.add_alerts(cert_data, "CERT")
+        manager.add_alerts(threatfeeds_data, "ThreatFeeds")
+        manager.add_alerts(reddit_data, "Reddit")
+        manager.add_alerts(exploitdb_data, "ExploitDB")
 
-    if successful_sources == 0:
-        logger.critical("❌ No alerts retrieved from any source. Sending critical error notification...")
-        alert_manager.notify_critical_error("❌ Todas las fuentes de alertas fallaron.")
+        # Procesar y enviar alertas
+        manager.process_and_send(min_score=5.0)
+
+        info("\u2705 Alert processing completed successfully.")
+
+    except Exception as e:
+        error(f"\u274c Error in alert processing: {e}")
+        sys.exit(1)
+
+def handle_command(command: str, args: list = None) -> None:
+    """
+    Manejar comandos desde la línea de comandos.
+    """
+    if args is None:
+        args = []
+
+    bot = TelegramBot()
+
+    if command == "test":
+        test_message = "\ud83d\udd2a *Test Message*\n\nThis is a test message from the C4A Alerts system."
+        if bot.send_message(test_message):
+            info("\u2705 Test message sent successfully.")
+        else:
+            error("\u274c Failed to send test message.")
+
+    elif command == "help":
+        print("C4A Alerts - Command Line Interface")
+        print("-----------------------------------")
+        print("Available commands:")
+        print("  run       - Run the alert system")
+        print("  test      - Send a test message to Telegram")
+        print("  help      - Show this help message")
+
     else:
-        logger.info(f"✅ Successfully processed alerts from {successful_sources} sources.")
+        print(f"Unknown command: {command}")
+        print("Use 'help' to see available commands.")
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        args = sys.argv[2:]
+        handle_command(command, args)
+    else:
+        run_alerts()
