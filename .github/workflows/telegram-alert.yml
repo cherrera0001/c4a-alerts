@@ -2,7 +2,7 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    - cron: '*/50 * * * *'  # Ejecuta cada 50 minutos
+    -  cron: '0 */2 * * *' # Ejecuta cada 50 minutos
   workflow_dispatch:        # Permite ejecución manual
 
 jobs:
