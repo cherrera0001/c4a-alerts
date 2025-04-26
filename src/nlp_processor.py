@@ -1,70 +1,112 @@
 import os
 import logging
+import re
+from typing import Dict
 
-# Intentar importar SentenceTransformer de sentence-transformers
+# Tratar de importar SentenceTransformer (modelo local)
 try:
     from sentence_transformers import SentenceTransformer, util
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
+    NLP_AVAILABLE = True
 except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    logging.warning("⚠️ sentence-transformers library not found. NLP features disabled.")
+    NLP_AVAILABLE = False
 
-# Variables de control de NLP y OpenAI
+# Configuración de entorno
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ENABLE_OPENAI = os.getenv("ENABLE_OPENAI", "false").lower() == "true"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-OPENAI_AVAILABLE = bool(ENABLE_OPENAI and OPENAI_API_KEY)
+OPENAI_AVAILABLE = False
 
-# Si está disponible sentence-transformers, cargar modelo
-if SENTENCE_TRANSFORMERS_AVAILABLE:
-    try:
-        model = SentenceTransformer("all-MiniLM-L6-v2")
-    except Exception as e:
-        logging.error(f"❌ Error loading SentenceTransformer model: {e}")
-        model = None
-        SENTENCE_TRANSFORMERS_AVAILABLE = False
-
-if OPENAI_AVAILABLE:
-    try:
+# Tratar de importar OpenAI
+try:
+    if ENABLE_OPENAI and OPENAI_API_KEY:
         import openai
         openai.api_key = OPENAI_API_KEY
+        OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
+# Inicializar modelo local si está disponible
+if NLP_AVAILABLE:
+    try:
+        model = SentenceTransformer('all-MiniLM-L6-v2')
     except Exception as e:
-        logging.error(f"❌ Error initializing OpenAI: {e}")
-        OPENAI_AVAILABLE = False
+        logging.error(f"❌ Error loading local NLP model: {e}")
+        NLP_AVAILABLE = False
 
 
-def summarize_text(text: str) -> str:
-    """Genera un resumen usando OpenAI si está disponible."""
-    if not OPENAI_AVAILABLE:
-        return text
+def clean_text(text: str) -> str:
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
 
+
+def summarize_with_openai(alert: Dict) -> Dict:
+    """
+    Usa OpenAI para resumir alertas.
+    """
+    prompt = f"""
+Resume la siguiente alerta de seguridad en 2 a 3 líneas, destacando los aspectos críticos:
+
+Título: {alert.get('title', '')}
+Resumen: {alert.get('summary', '')}
+URL: {alert.get('url', '')}
+
+Respuesta:
+"""
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Resume el siguiente texto en español de manera concisa y técnica."},
-                {"role": "user", "content": text}
+                {"role": "system", "content": "Eres un analista de ciberseguridad experto."},
+                {"role": "user", "content": prompt}
             ],
-            temperature=0.2,
-            max_tokens=150
+            temperature=0.3,
+            max_tokens=200
         )
-        summary = response["choices"][0]["message"]["content"].strip()
-        return summary
+        summary = response['choices'][0]['message']['content'].strip()
+        alert['summary'] = summary
     except Exception as e:
-        logging.error(f"❌ OpenAI summarization error: {e}")
-        return text
+        logging.error(f"❌ OpenAI summarization failed: {e}")
+    return alert
 
 
-def are_texts_similar(text1: str, text2: str, threshold: float = 0.8) -> bool:
-    """Evalúa la similitud entre dos textos usando embeddings."""
-    if not SENTENCE_TRANSFORMERS_AVAILABLE or model is None:
-        logging.warning("⚠️ Text similarity check skipped: sentence-transformers not available.")
-        return False
+def summarize_locally(alert: Dict) -> Dict:
+    """
+    Usa modelo local para intentar resumir.
+    """
+    if not NLP_AVAILABLE:
+        return alert
+
+    title = alert.get('title', '')
+    summary = alert.get('summary', '')
 
     try:
-        emb1 = model.encode(text1, convert_to_tensor=True)
-        emb2 = model.encode(text2, convert_to_tensor=True)
-        similarity = util.cos_sim(emb1, emb2).item()
-        return similarity >= threshold
+        # Combinar título y resumen
+        text = clean_text(f"{title}. {summary}")
+
+        # Embedding y simple truncamiento
+        embedding = model.encode(text, convert_to_tensor=True)
+        if len(text.split()) > 50:
+            sentences = text.split('.')
+            summary_sentences = '. '.join(sentences[:2])
+            alert['summary'] = summary_sentences
     except Exception as e:
-        logging.error(f"❌ Error during text similarity calculation: {e}")
-        return False
+        logging.error(f"❌ Local summarization failed: {e}")
+
+    return alert
+
+
+def process_alert(alert: Dict) -> Dict:
+    """
+    Procesa y resume una alerta si el procesamiento NLP está disponible.
+    """
+    if not NLP_AVAILABLE and not (ENABLE_OPENAI and OPENAI_AVAILABLE):
+        return alert
+
+    try:
+        if ENABLE_OPENAI and OPENAI_AVAILABLE:
+            summarized_alert = summarize_with_openai(alert)
+        else:
+            summarized_alert = summarize_locally(alert)
+        return summarized_alert
+    except Exception as e:
+        logging.error(f"❌ Error processing alert: {e}")
+        return alert
