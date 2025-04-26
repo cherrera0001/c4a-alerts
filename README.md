@@ -1,4 +1,5 @@
-# 🔐 C4A CVE & PoC Alerts — v2.0.0
+
+# 🔐 C4A CVE & PoC Alerts — v3.0.1
 
 Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de alertas enriquecidas por Telegram. Ejecutado completamente desde GitHub Actions, sin necesidad de servidores propios.
 
@@ -15,7 +16,8 @@ c4a-alerts/
 │   ├── utils.py              # Funciones comunes (Markdown, validación)
 │   └── sources/              # Múltiples fuentes externas
 │       ├── reddit.py
-│       └── exploitdb.py
+│       ├── exploitdb.py
+│       ├── threatfeeds.py
 ├── test/                     # Pruebas unitarias
 │   └── test_*.py
 ├── .github/
@@ -25,105 +27,136 @@ c4a-alerts/
 ├── main.py                  # Script principal de ejecución
 ├── requirements.txt         # Librerías necesarias
 └── README.md
-```
+
 
 ---
 
-## ✨ Características Nuevas en v2.0.0
+✨ Características Nuevas en v3.0.1
 
-- 🔐 Historial cifrado en Gist con AES-256-GCM
-- ✅ Control de duplicados: no se reenvían CVEs/PoCs ya alertados
-- 🧹 Modular: integración de múltiples fuentes como Reddit y Exploit-DB
-- 🧪 Sistema de testing automatizado
-- 🚀 Dos workflows separados: `alert` y `test`
+🔐 Historial cifrado en Gist con AES-256-GCM
+
+✅ Control de duplicados: no se reenvían CVEs/PoCs ya alertados
+
+🧹 Modular: integración de múltiples fuentes como Reddit y Exploit-DB
+
+🧪 Sistema de testing automatizado
+
+🚀 Dos workflows separados: alert y test
+
+
 
 ---
 
-## 🗕️ Automatización en GitHub Actions
+🗕️ Automatización en GitHub Actions
 
-### 📤 `telegram-alert.yml`
+📤 telegram-alert.yml
+
 Se ejecuta cada 5 minutos:
 
-1. Recupera CVEs y PoCs
-2. Filtra por CVSS ≥ 7.0
-3. Valida enlaces y estado
-4. Verifica si ya se alertó
-5. Envía mensajes nuevos a Telegram
+1. Recupera CVEs, PoCs y Noticias de Amenazas
 
-### 🧪 `test.yml`
-Corre automáticamente en cada push o pull request sobre `main` y ejecuta:
 
-- `unittest` sobre los módulos de `test/`
+2. Filtra por severidad y relevancia
 
----
 
-## 🔐 Secrets Requeridos
+3. Verifica duplicados y estado
 
-| Nombre           | Descripción                                              |
-|------------------|----------------------------------------------------------|
-| `TELEGRAM_TOKEN` | Token del bot creado con @BotFather                      |
-| `CHAT_ID`        | ID del grupo o canal de Telegram donde alertar          |
-| `GIST_ID`        | ID del Gist donde se guarda el historial cifrado        |
-| `GIST_TOKEN`     | Token personal de GitHub con permisos `gist`            |
-| `ENCRYPTION_KEY` | Clave AES-256 en base64 (genera con `os.urandom`)       |
 
-> ⚠️ Todos los secrets deben estar configurados en `Settings > Secrets and variables > Actions`
+4. Envía mensajes nuevos a Telegram
+
+
+
+🧪 test.yml
+
+Corre automáticamente en cada push o pull request:
+
+Ejecuta unittest sobre los módulos de test/
+
+Valida correcto funcionamiento de módulos principales
+
+
 
 ---
 
-## 🧪 Pruebas Locales
+🔐 Secrets Requeridos
 
-```bash
+> ⚠️ Todos los secrets deben estar configurados en Settings > Secrets and variables > Actions
+
+
+
+
+---
+
+🧪 Pruebas Locales
+
 # Instalar dependencias
 pip install -r requirements.txt
 
 # Ejecutar pruebas unitarias
 python -m unittest discover -s test
-```
+
 
 ---
 
-## 💡 Fuentes Integradas
+💡 Fuentes Integradas
 
-- 🔍 [https://cve.circl.lu/api/last](https://cve.circl.lu/api/last) (CVEs recientes)
-- 📂 `nomi-sec/PoC-in-GitHub` (PoCs en GitHub)
-- 🗣️ [Reddit r/netsec](https://www.reddit.com/r/netsec/new.json)
-- 🪨 [https://exploit-db.com](https://exploit-db.com) (via scraping)
+🔍 https://cve.circl.lu/api/last (CVEs recientes)
 
----
+📂 nomi-sec/PoC-in-GitHub (PoCs en GitHub)
 
-## 🛡️ Seguridad
+🗣️ Reddit r/netsec
 
-- Cifrado de historial con `cryptography` y AES-GCM
-- Tokens seguros vía GitHub Secrets
-- Filtrado estricto con validaciones de formato y enlaces HTTPS
-- Cumplimiento básico de OWASP ASVS: autenticación, almacenamiento seguro, sanitización de inputs
+🪨 Exploit-DB (scraping controlado)
+
+📰 Threat Intelligence Feeds (HackerNews, ThreatPost, etc.)
+
+
 
 ---
 
-## 📊 Métricas CI/CD
+🛡️ Seguridad
 
-- ⏱️ Tiempo de ejecución (`run duration`)
-- ❌ Logs de errores HTTP
-- 📬 Conteo de mensajes enviados
-- 🗂️ Historial persistente de CVEs/PoCs encriptados
+Cifrado de historial con cryptography y AES-GCM
+
+Tokens seguros vía GitHub Secrets
+
+Validaciones estrictas de entradas y outputs
+
+Cumplimiento básico de OWASP ASVS en almacenamiento y comunicación
+
+
 
 ---
 
-## 🌐 Mantenido por [@cherrera0001](https://github.com/cherrera0001)
+📊 Métricas CI/CD
+
+⏱️ Tiempo de ejecución (run duration)
+
+❌ Logs de errores HTTP
+
+📬 Conteo de mensajes enviados exitosamente
+
+🗂️ Historial persistente de CVEs/PoCs encriptados
+
+
 
 ---
 
-## 📊 Diagrama de Flujo Simplificado
+🌐 Mantenido por @cherrera0001
 
-```plaintext
+
+---
+
+📊 Diagrama de Flujo Simplificado
+
 +----------------+         +-------------------------+          +--------------------+
 | GitHub Actions | --GET-> | Múltiples fuentes CVE/PoC | --POST-> | Telegram Bot API   |
 | (cada 5 min)   |         | CIRCL / GitHub / Reddit |          | Chat/Grupo/Canal   |
 +----------------+         +-------------------------+          +--------------------+
-```
+
 
 ---
 
-❓ ¿Quieres contribuir, clonar o adaptarlo? Forkea el repo, ajusta los secrets y ¡listo! ✨
+> ❓ ¿Quieres contribuir, clonar o adaptarlo? ¡Forkea el repo, ajusta los secrets y comienza a proteger tu mundo!
+
 
