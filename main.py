@@ -13,69 +13,63 @@ from src.collector import get_latest_cves, get_latest_pocs
 from src.manager import ThreatAlertManager
 from src.telegram_bot import TelegramBot
 
-# Configurar entorno HuggingFace para evitar warnings
+# Disable Hugging Face telemetry and progress bars
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
-# Cargar variables de entorno
+# Load environment variables
 load_dotenv()
 
-def run_alerts() -> None:
-    """
-    Función principal para recolectar, procesar y enviar alertas.
-    """
-    info("\ud83d\ude80 Starting C4A Alerts system...")
+def main() -> None:
+    info("🚀 Starting C4A Alerts system...")
 
-    # Inicializar manager de alertas
     manager = ThreatAlertManager()
 
-    try:
-        # Recolectar alertas de diferentes fuentes
-        cve_data = get_latest_cves(limit=10)
-        poc_data = get_latest_pocs(limit=10)
-        mitre_data = fetch_mitre_techniques(limit=5)
-        cisa_data = fetch_cisa_alerts(limit=5)
-        stepsecurity_data = fetch_stepsecurity_posts(limit=3)
-        cert_data = fetch_cert_alerts(limit=10)
-        threatfeeds_data = fetch_threat_feeds(limit=10)
-        reddit_data = fetch_reddit_posts(limit=5)
-        exploitdb_data = fetch_exploitdb_alerts(limit=5)
+    # Define alert sources
+    sources = {
+        "CVE": lambda: get_latest_cves(limit=10),
+        "PoC": lambda: get_latest_pocs(limit=10),
+        "MITRE ATT&CK": lambda: fetch_mitre_techniques(limit=5),
+        "CISA": lambda: fetch_cisa_alerts(limit=5),
+        "StepSecurity": lambda: fetch_stepsecurity_posts(limit=3),
+        "CERT": lambda: fetch_cert_alerts(limit=10),
+        "ThreatFeeds": lambda: fetch_threat_feeds(limit=10),
+        "Reddit": lambda: fetch_reddit_posts(limit=5),
+        "ExploitDB": lambda: fetch_exploitdb_alerts(limit=5),
+    }
 
-        # Agregar alertas al manager
-        manager.add_alerts(cve_data, "CVE")
-        manager.add_alerts(poc_data, "PoC")
-        manager.add_alerts(mitre_data, "MITRE ATT&CK")
-        manager.add_alerts(cisa_data, "CISA")
-        manager.add_alerts(stepsecurity_data, "StepSecurity")
-        manager.add_alerts(cert_data, "CERT")
-        manager.add_alerts(threatfeeds_data, "ThreatFeeds")
-        manager.add_alerts(reddit_data, "Reddit")
-        manager.add_alerts(exploitdb_data, "ExploitDB")
+    success_sources = 0
 
-        # Procesar y enviar alertas
-        manager.process_and_send(min_score=5.0)
+    for name, fetch_func in sources.items():
+        try:
+            alerts = fetch_func()
+            if alerts:
+                manager.add_alerts(alerts, name)
+                success_sources += 1
+        except Exception as e:
+            error(f"❌ Error fetching alerts from {name}: {e}")
 
-        info("\u2705 Alert processing completed successfully.")
-
-    except Exception as e:
-        error(f"\u274c Error in alert processing: {e}")
-        sys.exit(1)
+    if success_sources > 0:
+        try:
+            manager.process_and_send(min_score=5.0)
+            info("✅ Alert processing completed successfully.")
+        except Exception as e:
+            error(f"❌ Failed to process or send alerts: {e}")
+    else:
+        warning("⚠️ No alerts collected from any source. Skipping processing.")
 
 def handle_command(command: str, args: list = None) -> None:
-    """
-    Manejar comandos desde la línea de comandos.
-    """
     if args is None:
         args = []
 
     bot = TelegramBot()
 
     if command == "test":
-        test_message = "\ud83d\udd2a *Test Message*\n\nThis is a test message from the C4A Alerts system."
+        test_message = "🧪 *Test Message*\n\nThis is a test message from the C4A Alerts system."
         if bot.send_message(test_message):
-            info("\u2705 Test message sent successfully.")
+            info("✅ Test message sent successfully.")
         else:
-            error("\u274c Failed to send test message.")
+            error("❌ Failed to send test message.")
 
     elif command == "help":
         print("C4A Alerts - Command Line Interface")
@@ -95,4 +89,4 @@ if __name__ == "__main__":
         args = sys.argv[2:]
         handle_command(command, args)
     else:
-        run_alerts()
+        main()
