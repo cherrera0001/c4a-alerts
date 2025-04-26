@@ -6,6 +6,7 @@ from datetime import datetime
 from src.secure_storage import load_sent_ids, save_sent_ids
 from src.notifier import send_telegram
 from src.nlp_processor import process_alert
+from src.threatfeeds import fetch_threat_feeds  # Nueva integración
 
 class ThreatAlertManager:
     def __init__(self):
@@ -121,7 +122,7 @@ class ThreatAlertManager:
         if "mitre_references" in alert:
             message += f"🎯 *MITRE ATT&CK:* {alert['mitre_references'][0]}\n"
         message += f"📊 *Severity:* {stars} ({score:.1f}/10)\n"
-        message += f"🔍 *Source:* {alert.get('source', 'Unknown')}\n"
+        message += f"🔍 *Source:* {alert.get("source", "Unknown")}\n"
         if alert.get("url"):
             message += f"🔗 {alert['url']}\n"
         return message
@@ -151,3 +152,7 @@ class ThreatAlertManager:
     def _generate_alert_id(self, alert: Dict[str, Any]) -> str:
         id_string = f"{alert.get('title', '')}{alert.get('url', '')}{alert.get('source', '')}"
         return hashlib.sha256(id_string.encode()).hexdigest()[:16]
+
+# Nota importante: Para activar threatfeeds en main.py recuerda usar:
+# threatfeeds_data = fetch_threat_feeds(limit=10)
+# manager.add_alerts(threatfeeds_data, "ThreatFeeds")
