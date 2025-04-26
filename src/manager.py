@@ -1,7 +1,8 @@
+# manager.py
+
 import logging
-import json
 import hashlib
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 from datetime import datetime
 from src.secure_storage import load_sent_ids, save_sent_ids
 from src.notifier import send_telegram
@@ -9,16 +10,17 @@ from src.nlp_processor import process_alert
 
 class ThreatAlertManager:
     def __init__(self):
-        self.sent_ids = load_sent_ids()
-        self.alerts = []
-        self.normalized_alerts = []
+        self.sent_ids: Set[str] = load_sent_ids()
+        self.alerts: List[Dict[str, Any]] = []
+        self.normalized_alerts: List[Dict[str, Any]] = []
 
     def add_alerts(self, alerts: List[Dict[str, Any]], source: str) -> None:
         for alert in alerts:
             if not isinstance(alert, dict):
                 continue
-            alert.setdefault("source", source)
-            alert.setdefault("timestamp", datetime.now().isoformat())
+            if "source" not in alert:
+                alert["source"] = source
+            alert["timestamp"] = datetime.now().isoformat()
             self.alerts.append(alert)
 
     def normalize_alerts(self) -> None:
@@ -49,44 +51,39 @@ class ThreatAlertManager:
             score = 0.0
             classification = alert.get("classification", {})
             score += classification.get("confidence", 0) * 3
-
-            # Attack types
             attack_types = classification.get("attack_types", [])
-            if any(a in ["Remote Code Execution", "Privilege Escalation", "Authentication Bypass"] for a in attack_types):
+            high_severity_types = ["Remote Code Execution", "Privilege Escalation", "Authentication Bypass"]
+            if any(attack in high_severity_types for attack in attack_types):
                 score += 2.0
-
-            # Tech stacks
             tech_stacks = classification.get("tech_stacks", [])
             if tech_stacks:
                 score += 1.0
-
-            # Critical keywords
-            critical_keywords = ["critical", "severe", "high", "urgent", "emergency", "zero-day", "0day", "bypass", "rce", "privilege escalation"]
+            critical_keywords = ["critical", "severe", "high", "urgent", "emergency", "zero-day", "0day"]
             text = f"{alert.get('title', '')} {alert.get('description', '')}".lower()
             if any(keyword in text for keyword in critical_keywords):
                 score += 2.0
-
             if "CVE-" in alert.get("title", "") or "CVE-" in alert.get("description", ""):
                 score += 1.5
-
             alert["score"] = min(10.0, score)
 
     def enrich_alerts(self) -> None:
         for alert in self.normalized_alerts:
             classification = alert.get("classification", {})
             attack_types = classification.get("attack_types", [])
-            mitre_refs = []
-            if "Remote Code Execution" in attack_types:
-                mitre_refs.append("https://attack.mitre.org/techniques/T1190/")
-            if "Privilege Escalation" in attack_types:
-                mitre_refs.append("https://attack.mitre.org/tactics/TA0004/")
-            if "Authentication Bypass" in attack_types:
-                mitre_refs.append("https://attack.mitre.org/techniques/T1212/")
-            if mitre_refs:
-                alert["mitre_references"] = mitre_refs
+            if attack_types:
+                mitre_references = []
+                for attack_type in attack_types:
+                    if attack_type == "Remote Code Execution":
+                        mitre_references.append("https://attack.mitre.org/techniques/T1190/")
+                    elif attack_type == "Privilege Escalation":
+                        mitre_references.append("https://attack.mitre.org/tactics/TA0004/")
+                    elif attack_type == "Authentication Bypass":
+                        mitre_references.append("https://attack.mitre.org/techniques/T1212/")
+                if mitre_references:
+                    alert["mitre_references"] = mitre_references
 
     def format_telegram_message(self, alert: Dict[str, Any]) -> str:
-        emoji_sources = {
+        source_emoji = {
             "MITRE ATT&CK": "🎯",
             "CISA": "🏛️",
             "StepSecurity": "🔒",
@@ -94,17 +91,20 @@ class ThreatAlertManager:
             "INCIBE-ES": "🇪🇸",
             "JPCERT": "🇯🇵",
             "NCSC-UK": "🇬🇧",
+            "ThreatPost": "📰",
+            "HackerNews": "💻",
+            "BleepingComputer": "🖥️",
+            "KrebsOnSecurity": "🔍",
+            "DarkReading": "📚",
             "Reddit": "🗣️",
             "ExploitDB": "🧨",
             "PoC": "💣",
             "CVE": "📄"
         }
-        emoji = emoji_sources.get(alert.get("source", ""), "🔔")
+        emoji = source_emoji.get(alert.get("source", ""), "🔔")
         score = alert.get("score", 0)
         stars = "⭐" * min(5, max(1, int(score / 2)))
-
         message = f"{emoji} *{alert.get('title', 'Alert')}*\n\n"
-
         if "ai_summary" in alert:
             message += f"📝 {alert['ai_summary']}\n\n"
         elif alert.get("description"):
@@ -112,21 +112,19 @@ class ThreatAlertManager:
             if len(desc) > 200:
                 desc = desc[:197] + "..."
             message += f"📝 {desc}\n\n"
-
         classification = alert.get("classification", {})
-        if classification.get("attack_types"):
-            message += f"🔴 *Attack Types:* {', '.join(classification['attack_types'])}\n"
-        if classification.get("tech_stacks"):
-            message += f"🔧 *Tech Stack:* {', '.join(classification['tech_stacks'])}\n"
-
+        attack_types = classification.get("attack_types", [])
+        tech_stacks = classification.get("tech_stacks", [])
+        if attack_types:
+            message += f"🔴 *Attack Types:* {', '.join(attack_types)}\n"
+        if tech_stacks:
+            message += f"🔧 *Tech Stack:* {', '.join(tech_stacks)}\n"
         if "mitre_references" in alert:
             message += f"🎯 *MITRE ATT&CK:* {alert['mitre_references'][0]}\n"
-
         message += f"📊 *Severity:* {stars} ({score:.1f}/10)\n"
         message += f"🔍 *Source:* {alert.get('source', 'Unknown')}\n"
         if alert.get("url"):
             message += f"🔗 {alert['url']}\n"
-
         return message
 
     def process_and_send(self, min_score: float = 3.0) -> None:
@@ -134,7 +132,6 @@ class ThreatAlertManager:
         self.score_alerts()
         self.enrich_alerts()
         self.normalized_alerts.sort(key=lambda x: x.get("score", 0), reverse=True)
-
         new_sent_ids = set()
         for alert in self.normalized_alerts:
             score = alert.get("score", 0)
@@ -148,11 +145,10 @@ class ThreatAlertManager:
                     logging.info(f"⏭️ Skipping low-score alert: {alert.get('title', 'Unknown')} (Score: {score:.1f})")
             except Exception as e:
                 logging.error(f"❌ Failed to send alert: {e}")
-
         if new_sent_ids:
             self.sent_ids.update(new_sent_ids)
             save_sent_ids(self.sent_ids)
 
     def _generate_alert_id(self, alert: Dict[str, Any]) -> str:
-        base = f"{alert.get('title', '')}{alert.get('url', '')}{alert.get('source', '')}"
-        return hashlib.sha256(base.encode()).hexdigest()[:16]
+        id_string = f"{alert.get('title', '')}{alert.get('url', '')}{alert.get('source', '')}"
+        return hashlib.sha256(id_string.encode()).hexdigest()[:16]
