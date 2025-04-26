@@ -10,26 +10,32 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 logger = logging.getLogger("c4a-alerts")
 
 def main():
-    logger.info("\U0001F680 Starting C4A Alerts system...")
+    logger.info("🚀 Starting C4A Alerts system...")
 
     alert_manager = ThreatAlertManager()
-
     successful_sources = 0
 
-    # Procesar cada fuente de alertas de manera segura
-    if alert_manager.fetch_cve_alerts():
-        successful_sources += 1
-    if alert_manager.fetch_cert_alerts():
-        successful_sources += 1
-    if alert_manager.fetch_reddit_alerts():
-        successful_sources += 1
+    sources = {
+        "CVE": alert_manager.fetch_cve_alerts,
+        "CERT": alert_manager.fetch_cert_alerts,
+        "Reddit": alert_manager.fetch_reddit_alerts,
+    }
 
-    # Validar si al menos una fuente fue exitosa
+    for source_name, fetch_function in sources.items():
+        try:
+            if fetch_function():
+                successful_sources += 1
+                logger.info(f"✅ {source_name} alerts fetched successfully.")
+            else:
+                logger.warning(f"⚠️ {source_name} returned no alerts.")
+        except Exception as e:
+            logger.error(f"❌ Error fetching {source_name} alerts: {e}")
+
     if successful_sources == 0:
-        logger.error("❌ No se pudo recuperar información de ninguna fuente.")
+        logger.critical("❌ No alerts retrieved from any source. Sending critical error notification...")
         alert_manager.notify_critical_error("❌ Todas las fuentes de alertas fallaron.")
-
-    logger.info("✅ Alert processing completed successfully.")
+    else:
+        logger.info(f"✅ Successfully processed alerts from {successful_sources} sources.")
 
 if __name__ == "__main__":
     main()
