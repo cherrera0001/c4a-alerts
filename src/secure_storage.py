@@ -7,13 +7,11 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from typing import Set
 
-# Cargar variables de entorno
-GIST_ID_RAW = os.getenv("GIST_ID", "")
-GIST_ID = GIST_ID_RAW.strip()
+# Carga de Variables de Entorno
+GIST_ID_RAW = os.getenv("GIST_ID", "").strip()
 GIST_TOKEN = os.getenv("GIST_TOKEN")
 ENCRYPTION_KEY_ENV = os.getenv("ENCRYPTION_KEY")
 
-# Configuración de cifrado
 if ENCRYPTION_KEY_ENV:
     try:
         ENCRYPTION_KEY = base64.b64decode(ENCRYPTION_KEY_ENV)
@@ -27,9 +25,8 @@ else:
     ENCRYPTION_KEY = None
     ENCRYPTION_ENABLED = False
 
-# Configuración de acceso a Gist
-if GIST_ID and GIST_TOKEN:
-    GIST_API_URL = f"https://api.github.com/gists/{GIST_ID}"
+if GIST_ID_RAW and GIST_TOKEN:
+    GIST_API_URL = f"https://api.github.com/gists/{GIST_ID_RAW}"
     HEADERS = {
         "Authorization": f"token {GIST_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
@@ -64,11 +61,11 @@ def decrypt_data(encrypted_json: str, key: bytes) -> str:
     try:
         data = json.loads(encrypted_json)
     except json.JSONDecodeError as e:
-        logging.error(f"❌ Invalid JSON format: {e}")
+        logging.error(f"❌ Invalid JSON format in encrypted data: {e}")
         return "[]"
 
-    # Si está en modo no cifrado
     if isinstance(data, dict) and "data" in data:
+        # Data no cifrada
         return data["data"]
 
     if not ENCRYPTION_ENABLED:
@@ -89,7 +86,7 @@ def decrypt_data(encrypted_json: str, key: bytes) -> str:
         decrypted_bytes = decryptor.update(ct) + decryptor.finalize()
         decrypted_text = decrypted_bytes.decode()
 
-        # Validar que el desencriptado sea una lista válida
+        # Validación: debe ser una lista
         parsed = json.loads(decrypted_text)
         if not isinstance(parsed, list):
             raise ValueError("Decrypted content is not a list.")
@@ -106,27 +103,30 @@ def load_sent_ids() -> Set[str]:
         return set()
 
     try:
-        response = requests.get(GIST_API_URL, headers=HEADERS, timeout=10)
+        response = requests.get(GIST_API_URL, headers=HEADERS, timeout=15)
         response.raise_for_status()
+
         files = response.json().get("files", {})
+        gist_content = files.get("alerts.json", {}).get("content", "[]")
 
-        if "alerts.json" not in files:
-            logging.warning("⚠️ alerts.json not found in Gist. Starting with empty history.")
-            return set()
-
-        gist_content = files["alerts.json"].get("content", "[]")
         decrypted = decrypt_data(gist_content, ENCRYPTION_KEY)
         ids = json.loads(decrypted)
 
         if not isinstance(ids, list):
-            logging.error("❌ Decrypted data is not a list. Resetting history.")
+            logging.error("❌ Decrypted data is not a valid list. Resetting.")
             return set()
 
+        logging.info(f"✅ Loaded {len(ids)} sent IDs from Gist.")
         return set(ids)
 
+    except requests.exceptions.HTTPError as e:
+        logging.error(f"❌ HTTP error accessing Gist: {e}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"❌ Connection error accessing Gist: {e}")
     except Exception as e:
-        logging.error(f"❌ Failed to load sent IDs from Gist: {e}")
-        return set()
+        logging.error(f"❌ General error loading sent IDs: {e}")
+
+    return set()
 
 def save_sent_ids(ids: Set[str]) -> None:
     if not GIST_ENABLED:
@@ -145,9 +145,9 @@ def save_sent_ids(ids: Set[str]) -> None:
             }
         }
 
-        response = requests.patch(GIST_API_URL, headers=HEADERS, json=payload, timeout=10)
+        response = requests.patch(GIST_API_URL, headers=HEADERS, json=payload, timeout=15)
         response.raise_for_status()
-        logging.info("✅ History updated successfully in Gist.")
+        logging.info(f"✅ Updated history in Gist. Total IDs saved: {len(ids)}.")
 
     except Exception as e:
         logging.error(f"❌ Error saving history to Gist: {e}")
