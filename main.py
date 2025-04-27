@@ -13,95 +13,104 @@ from src.sources.exploitdb import fetch_exploitdb_alerts
 from src.collector import get_latest_cves, get_latest_pocs
 from src.manager import ThreatAlertManager
 from src.telegram_bot import TelegramBot
-from src.secure_storage import load_sent_ids, save_sent_ids  # ¡ahora se usa!
+from src.secure_storage import load_sent_ids, save_sent_ids
 
 # Cargar variables de entorno
 load_dotenv()
 
-# Forzar configuración para Huggingface Hub
+# Configuración extra para Huggingface Hub
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
-CRITICAL_KEYWORDS = ["rce", "remote code execution", "bypass", "0day", "zero-day", "privesc", "privilege escalation", "exploit", "critical"]
+CRITICAL_KEYWORDS = [
+    "rce", "remote code execution", "bypass", "0day", "zero-day",
+    "privesc", "privilege escalation", "exploit", "critical"
+]
 
 def run_alerts() -> None:
-    info("🚀 Starting C4A Alerts system...")
+    try:
+        info("🚀 Iniciando C4A Alerts system...")
 
-    # 1. Cargar historial de IDs enviados
-    sent_ids = load_sent_ids()
-    if sent_ids:
-        info(f"✅ Historial cargado correctamente: {len(sent_ids)} IDs.")
-    else:
-        warning("⚠️ No se pudo cargar historial anterior o historial vacío. Se enviarán todas las alertas como nuevas.")
+        # 1. Cargar historial de IDs enviados
+        sent_ids = load_sent_ids()
+        if sent_ids:
+            info(f"✅ Historial cargado correctamente: {len(sent_ids)} IDs.")
+        else:
+            warning("⚠️ No se pudo cargar historial anterior o historial vacío. Se considerarán todas las alertas como nuevas.")
 
-    # 2. Inicializar Manager y fuentes
-    manager = ThreatAlertManager()
+        # 2. Inicializar manager y fuentes
+        manager = ThreatAlertManager()
+        all_sources = {
+            "CVE": get_latest_cves,
+            "PoC": get_latest_pocs,
+            "MITRE ATT&CK": fetch_mitre_techniques,
+            "CISA": fetch_cisa_alerts,
+            "StepSecurity": fetch_stepsecurity_posts,
+            "CERT": fetch_cert_alerts,
+            "ThreatFeeds": fetch_threat_feeds,
+            "Reddit": fetch_reddit_posts,
+            "ExploitDB": fetch_exploitdb_alerts
+        }
 
-    all_sources = {
-        "CVE": get_latest_cves,
-        "PoC": get_latest_pocs,
-        "MITRE ATT&CK": fetch_mitre_techniques,
-        "CISA": fetch_cisa_alerts,
-        "StepSecurity": fetch_stepsecurity_posts,
-        "CERT": fetch_cert_alerts,
-        "ThreatFeeds": fetch_threat_feeds,
-        "Reddit": fetch_reddit_posts,
-        "ExploitDB": fetch_exploitdb_alerts
-    }
+        info("🔎 Consultando todas las fuentes configuradas...")
+        for source_name, fetch_func in all_sources.items():
+            try:
+                alerts = fetch_func(limit=10)
+                manager.add_alerts(alerts, source_name)
+                info(f"✅ {len(alerts)} alertas obtenidas desde {source_name}")
+            except Exception as e:
+                warning(f"⚠️ Error consultando {source_name}: {e}")
 
-    for source_name, fetch_func in all_sources.items():
-        try:
-            alerts = fetch_func(limit=10)
-            manager.add_alerts(alerts, source_name)
-            info(f"✅ Fetched {len(alerts)} alerts from {source_name}")
-        except Exception as e:
-            warning(f"⚠️ Failed fetching {source_name}: {e}")
+        # 3. Procesar alertas
+        manager.normalize_alerts()
+        manager.score_alerts()
+        manager.enrich_alerts()
 
-    # 3. Procesar alertas
-    manager.normalize_alerts()
-    manager.score_alerts()
-    manager.enrich_alerts()
+        # 4. Filtrar alertas críticas
+        critical_alerts = []
+        for alert in manager.normalized_alerts:
+            title = alert.get("title", "").lower()
+            desc = alert.get("description", "").lower()
+            combined_text = f"{title} {desc}"
+            if any(word in combined_text for word in CRITICAL_KEYWORDS):
+                critical_alerts.append(alert)
 
-    # 4. Filtrar alertas críticas
-    critical_alerts = []
-    for alert in manager.normalized_alerts:
-        title = alert.get("title", "").lower()
-        desc = alert.get("description", "").lower()
-        combined_text = f"{title} {desc}"
-
-        if any(word in combined_text for word in CRITICAL_KEYWORDS):
-            critical_alerts.append(alert)
-
-    # 5. Enviar alertas críticas solo si no fueron enviadas antes
-    if critical_alerts:
         bot = TelegramBot()
-        for alert in critical_alerts:
-            alert_id = alert.get("id") or alert.get("title")  # usar ID si existe, si no título
-            if not alert_id:
-                warning("⚠️ Alerta sin ID ni título definido, será omitida para control de duplicados.")
-                continue
 
-            if alert_id not in sent_ids:
-                try:
-                    message = manager.format_telegram_message(alert)
-                    if bot.send_message(message):
-                        sent_ids.add(alert_id)
-                        info(f"✅ Critical alert sent: {alert.get('title')}")
-                    else:
-                        error(f"❌ Failed to send critical alert: {alert.get('title')}")
-                except Exception as e:
-                    error(f"❌ Error sending alert: {e}")
-            else:
-                info(f"ℹ️ Alerta ya enviada previamente: {alert.get('title')} — omitida.")
+        if critical_alerts:
+            info(f"🚨 Detectadas {len(critical_alerts)} alertas críticas para envío.")
+            for alert in critical_alerts:
+                alert_id = alert.get("id") or alert.get("title")
+                if not alert_id:
+                    warning("⚠️ Alerta sin ID ni título definido, omitida para control de duplicados.")
+                    continue
 
-    else:
-        # Fallback: enviar alertas normales con score >= 3
-        info("⚠️ No se encontraron alertas críticas por keywords, aplicando fallback por score mínimo 3.0")
-        manager.process_and_send(min_score=3.0)
+                if alert_id not in sent_ids:
+                    try:
+                        message = manager.format_telegram_message(alert)
+                        if message and bot.send_message(message):
+                            sent_ids.add(alert_id)
+                            info(f"✅ Alerta crítica enviada: {alert.get('title')}")
+                        else:
+                            error(f"❌ Fallo al enviar alerta crítica: {alert.get('title')}")
+                    except Exception as e:
+                        error(f"❌ Error enviando alerta crítica: {e}")
+                else:
+                    info(f"ℹ️ Alerta ya enviada previamente: {alert.get('title')} — omitida.")
+        else:
+            info("⚠️ No se encontraron alertas críticas por keywords. Aplicando fallback...")
+            manager.process_and_send(min_score=3.0)
 
-    # 6. Guardar historial actualizado
-    save_sent_ids(sent_ids)
-    info("✅ Alert processing completed successfully.")
+        # 5. Guardar historial solo si el proceso fue exitoso
+        save_sent_ids(sent_ids)
+        info("✅ Ejecución de alertas completada exitosamente.")
+
+    except KeyboardInterrupt:
+        warning("⛔ Interrupción manual detectada. No se guardará historial.")
+    except Exception as e:
+        error(f"❌ Error inesperado durante ejecución de run_alerts: {e}")
+    finally:
+        info("🏁 Fin de ejecución de C4A Alerts system.")
 
 def handle_command(command: str, args: list = None) -> None:
     if args is None:
