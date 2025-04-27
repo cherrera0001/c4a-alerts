@@ -13,6 +13,7 @@ from src.sources.exploitdb import fetch_exploitdb_alerts
 from src.collector import get_latest_cves, get_latest_pocs
 from src.manager import ThreatAlertManager
 from src.telegram_bot import TelegramBot
+from src.secure_storage import load_sent_ids, save_sent_ids  # ¡ahora se usa!
 
 # Cargar variables de entorno
 load_dotenv()
@@ -26,6 +27,14 @@ CRITICAL_KEYWORDS = ["rce", "remote code execution", "bypass", "0day", "zero-day
 def run_alerts() -> None:
     info("🚀 Starting C4A Alerts system...")
 
+    # 1. Cargar historial de IDs enviados
+    sent_ids = load_sent_ids()
+    if sent_ids:
+        info(f"✅ Historial cargado correctamente: {len(sent_ids)} IDs.")
+    else:
+        warning("⚠️ No se pudo cargar historial anterior o historial vacío. Se enviarán todas las alertas como nuevas.")
+
+    # 2. Inicializar Manager y fuentes
     manager = ThreatAlertManager()
 
     all_sources = {
@@ -48,32 +57,50 @@ def run_alerts() -> None:
         except Exception as e:
             warning(f"⚠️ Failed fetching {source_name}: {e}")
 
-    # Procesar alertas
+    # 3. Procesar alertas
     manager.normalize_alerts()
     manager.score_alerts()
     manager.enrich_alerts()
 
-    # Aplicar nueva lógica
+    # 4. Filtrar alertas críticas
     critical_alerts = []
     for alert in manager.normalized_alerts:
         title = alert.get("title", "").lower()
         desc = alert.get("description", "").lower()
         combined_text = f"{title} {desc}"
+
         if any(word in combined_text for word in CRITICAL_KEYWORDS):
             critical_alerts.append(alert)
 
+    # 5. Enviar alertas críticas solo si no fueron enviadas antes
     if critical_alerts:
+        bot = TelegramBot()
         for alert in critical_alerts:
-            try:
-                message = manager.format_telegram_message(alert)
-                TelegramBot().send_message(message)
-                info(f"✅ Critical alert sent: {alert.get('title')}")
-            except Exception as e:
-                error(f"❌ Failed to send critical alert: {e}")
+            alert_id = alert.get("id") or alert.get("title")  # usar ID si existe, si no título
+            if not alert_id:
+                warning("⚠️ Alerta sin ID ni título definido, será omitida para control de duplicados.")
+                continue
+
+            if alert_id not in sent_ids:
+                try:
+                    message = manager.format_telegram_message(alert)
+                    if bot.send_message(message):
+                        sent_ids.add(alert_id)
+                        info(f"✅ Critical alert sent: {alert.get('title')}")
+                    else:
+                        error(f"❌ Failed to send critical alert: {alert.get('title')}")
+                except Exception as e:
+                    error(f"❌ Error sending alert: {e}")
+            else:
+                info(f"ℹ️ Alerta ya enviada previamente: {alert.get('title')} — omitida.")
+
     else:
-        # Fallback: enviar solo alertas normales con score >= 3
+        # Fallback: enviar alertas normales con score >= 3
+        info("⚠️ No se encontraron alertas críticas por keywords, aplicando fallback por score mínimo 3.0")
         manager.process_and_send(min_score=3.0)
 
+    # 6. Guardar historial actualizado
+    save_sent_ids(sent_ids)
     info("✅ Alert processing completed successfully.")
 
 def handle_command(command: str, args: list = None) -> None:
