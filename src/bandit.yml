@@ -1,0 +1,9 @@
+# bandit.yml
+# Configuración básica para ignorar falsos positivos comunes
+skips:
+  - B101  # Ignorar alertas de "assert"
+  - B311  # Ignorar alertas de "random"
+  - B603  # Ignorar "subprocess_without_shell_true"
+  - B404  # Ignorar "import_subprocess"
+targets:
+  - src/
