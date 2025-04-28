@@ -33,4 +33,3 @@ jobs:
       run: |
         echo "🛡️ Ejecutando bandit para escaneo de seguridad..."
         bandit -r src/ -lll -ii
-
