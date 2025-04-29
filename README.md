@@ -1,5 +1,5 @@
 
-# 🔐 C4A CVE & PoC Alerts — v3.0.1
+# 🔐 C4A CVE & PoC Alerts — v3.1.0
 
 Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de alertas enriquecidas por Telegram. Ejecutado completamente desde GitHub Actions, sin necesidad de servidores propios.
 
@@ -10,17 +10,13 @@ Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de 
 Sistema modular de alerta temprana para amenazas, CVEs, PoCs y noticias de seguridad, automatizado en GitHub Actions.
 
 ---
-
-## 🚀 Estructura del Proyecto
-
-```plaintext
 c4a-alerts/
 ├── src/
-│   ├── collector.py         # Recolector de CVEs y PoCs
-│   ├── notifier.py          # Envío de mensajes a Telegram
-│   ├── secure_storage.py    # Cifrado AES + almacenamiento en GitHub Gist
-│   ├── utils.py             # Funciones comunes (Markdown, validación)
-│   └── sources/             # Múltiples fuentes externas
+│   ├── collector.py          # Recolector de CVEs y PoCs
+│   ├── notifier.py           # Envío de mensajes a Telegram
+│   ├── secure_storage.py     # Historial cifrado en GitHub Gist
+│   ├── utils.py              # Funciones comunes y validaciones
+│   └── sources/              # Integraciones de datos
 │       ├── reddit.py
 │       ├── exploitdb.py
 │       ├── threatfeeds.py
@@ -28,34 +24,32 @@ c4a-alerts/
 │       ├── cisa.py
 │       ├── mitre.py
 │       ├── stepsecurity.py
+│       ├── github_advisories.py   # 🆕 GitHub Security Advisories
 ├── test/                    # Pruebas unitarias
 ├── .github/
 │   └── workflows/
-│       ├── telegram-alert.yml      # Envío de alertas (cada 5 min)
-│       ├── code_quality.yml        # Análisis estático (flake8, bandit)
-│       ├── sonarcloud-analysis.yml # Análisis de bugs y calidad en SonarCloud
-│       ├── health_check.yml        # Monitoreo de estado de feeds CERT
-├── main.py                  # Script principal de ejecución
-├── monitor_cert_health.py    # Script para verificación de fuentes
-├── requirements.txt         # Dependencias necesarias
-├── .flake8                   # Reglas de estilo
-├── .sonarcloud.properties    # Configuración de SonarCloud
+│       ├── telegram-alert.yml      # Envío de alertas (cada 2 horas)
+│       ├── code_quality.yml        # Análisis de calidad (flake8, bandit)
+│       ├── sonarcloud-analysis.yml # Análisis de bugs y deuda técnica
+│       ├── health_check.yml        # Monitoreo de salud de fuentes CERT
+├── main.py                   # Ejecución principal
+├── monitor_cert_health.py     # Verificación de salud de feeds
+├── requirements.txt          # Dependencias necesarias
+├── .flake8                    # Reglas de estilo
+├── .sonarcloud.properties     # Configuración SonarCloud
 └── README.md
 
 ---
 
-✨ Características Nuevas en v3.0.1
+✨ Características Nuevas (v3.1.0)
 
-🔐 Historial cifrado en Gist con AES-256-GCM
-
-✅ Control de duplicados: no se reenvían CVEs/PoCs ya alertados
-
-🧹 Modular: integración de múltiples fuentes como Reddit y Exploit-DB
-
-🧪 Sistema de testing automatizado
-
-🚀 Dos workflows separados: alert y test
-
+✅ Control de duplicados con historial cifrado (AES-256-GCM)
+✅ Integración con GitHub Security Advisories
+✅ Filtrado inteligente por palabras clave críticas
+✅ Monitoreo de feeds nacionales e internacionales (CERTs, CISA, etc.)
+✅ Sistema modular y escalable (fuentes fáciles de añadir)
+✅ Análisis de seguridad (Bandit) y calidad de código (Flake8, SonarCloud)
+✅ Automatización completa en GitHub Actions
 
 
 ---
@@ -64,19 +58,25 @@ c4a-alerts/
 
 📤 telegram-alert.yml
 
-Se ejecuta cada 2 horas (tiempo configurable):
+    Recoge amenazas de múltiples fuentes
 
-1. Recupera CVEs, PoCs y Noticias de Amenazas
+    Filtra alertas críticas
 
+    Envía notificaciones por Telegram
 
-2. Filtra por severidad y relevancia
+🛡️ code_quality.yml
 
+    Ejecuta análisis de seguridad con Bandit
 
-3. Verifica duplicados y estado
+    Verifica estilo de código con Flake8
 
+📊 sonarcloud-analysis.yml
 
-4. Envía mensajes nuevos a Telegram
+    Escanea el proyecto en SonarCloud para detectar bugs, code smells y vulnerabilidades
 
+🔍 health_check.yml
+
+    Verifica disponibilidad y estado de todos los feeds RSS/JSON integrados
 
 
 🧪 test.yml
