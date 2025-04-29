@@ -172,7 +172,7 @@ Cumplimiento básico de OWASP ASVS en almacenamiento y comunicación
 > ❓ ¿Quieres contribuir, clonar o adaptarlo? ¡Forkea el repo, ajusta los secrets y comienza a proteger tu mundo!
 
 -----
-![image](https://github.com/user-attachments/assets/2b85ae1c-178a-4e37-869c-ed26fd35c595)
 
 
 
+![test](https://github.com/user-attachments/assets/af972a8b-a743-438c-b37e-261b142716e8)
