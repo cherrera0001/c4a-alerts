@@ -172,11 +172,7 @@ Cumplimiento básico de OWASP ASVS en almacenamiento y comunicación
 > ❓ ¿Quieres contribuir, clonar o adaptarlo? ¡Forkea el repo, ajusta los secrets y comienza a proteger tu mundo!
 
 -----
-Concepto	¿C4A-Alerts cumple?	Justificación técnica
-No gestión directa de servidores	✅	Tú no administras servidores físicos ni VPS: el bot corre en GitHub Actions, que es una plataforma CI/CD administrada.
-Pago por uso / gratuito	✅	GitHub Actions usa tiers gratuitos o por uso, y ejecuta tu código solo cuando ocurre un trigger (push, schedule, etc). No pagas un servidor encendido.
-Escala automática (limitada)	✅	GitHub ejecuta workflows bajo demanda, y aunque tiene límites, escala a múltiples ejecuciones concurrentes sin que debas escalar servidores manualmente.
-Infraestructura abstracta	✅	No te preocupas de instalar SO, parchar, monitorear hardware. Solo defines el flujo (.yml) y el script (python) a correr.
-Event-driven (disparado por eventos)	✅	El sistema corre automáticamente por horarios programados (cron) o eventos como push, que es el modelo típico serverless: ejecución bajo demanda.
+![image](https://github.com/user-attachments/assets/2b85ae1c-178a-4e37-869c-ed26fd35c595)
+
 
 
