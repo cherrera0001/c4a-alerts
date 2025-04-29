@@ -10,7 +10,6 @@ Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de 
 Sistema modular de alerta temprana para amenazas, CVEs, PoCs y noticias de seguridad, automatizado en GitHub Actions.
 
 ---
-
 c4a-alerts/
 ├── src/
 │   ├── collector.py            # Recolector de CVEs y PoCs
