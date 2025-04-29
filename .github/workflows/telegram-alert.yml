@@ -33,6 +33,7 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
+          GHSA_TOKEN: ${{ secrets.GHSA_TOKEN }} 
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ENABLE_OPENAI: "false"  # Desactivado por defecto
           HF_HUB_DISABLE_TELEMETRY: "1"
