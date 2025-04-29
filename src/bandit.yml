@@ -1,4 +1,4 @@
-# bandit.yml
+# bandit.yaml
 # Configuración básica para ignorar falsos positivos comunes
 skips:
   - B101  # Ignorar alertas de "assert"

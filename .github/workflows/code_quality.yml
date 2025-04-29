@@ -43,4 +43,4 @@ jobs:
     - name: Run Bandit (Security Scan)
       run: |
         echo "🛡️ Ejecutando bandit para escaneo de seguridad..."
-        bandit -r src/ -c bandit.yml -f txt -o bandit-results.txt
+        bandit -r src/ -c bandit.yaml -f txt -o bandit-results.txt
