@@ -8,14 +8,36 @@ Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de 
 # 🛡️ C4A Alerts
 
 Sistema modular de alerta temprana para amenazas, CVEs, PoCs y noticias de seguridad, automatizado en GitHub Actions.
----
 
-![image](https://github.com/user-attachments/assets/efb1985d-c62a-49f1-910e-88bee544cd2d)
+## 📁 Estructura del Proyecto
+
+| Ruta                                  | Descripción                                               |
+|---------------------------------------|-----------------------------------------------------------|
+| `src/collector.py`                    | Recolector de CVEs y PoCs                                |
+| `src/notifier.py`                     | Envío de mensajes a Telegram                             |
+| `src/secure_storage.py`               | Historial cifrado en GitHub Gist                         |
+| `src/utils.py`                        | Funciones comunes y validaciones                         |
+| `src/sources/reddit.py`              | Fuente: Reddit                                           |
+| `src/sources/exploitdb.py`           | Fuente: Exploit-DB                                       |
+| `src/sources/threatfeeds.py`         | Fuente: Feeds generales (ThreatPost, HackerNews, etc.)   |
+| `src/sources/cert.py`                | Fuente: CERTs nacionales e internacionales               |
+| `src/sources/cisa.py`                | Fuente: CISA (EE.UU.)                                    |
+| `src/sources/mitre.py`               | Fuente: MITRE ATT&CK                                     |
+| `src/sources/stepsecurity.py`        | Fuente: StepSecurity                                     |
+| `src/sources/github_advisories.py`   | 🆕 GitHub Security Advisories                            |
+| `test/`                               | Pruebas unitarias                                        |
+| `.github/workflows/telegram-alert.yml` | Envío de alertas (cada 2 horas)                          |
+| `.github/workflows/code_quality.yml` | Análisis de calidad (flake8, bandit)                     |
+| `.github/workflows/sonarcloud-analysis.yml` | Análisis de bugs y deuda técnica                 |
+| `.github/workflows/health_check.yml` | Monitoreo de salud de fuentes CERT                       |
+| `main.py`                             | Script principal de ejecución                            |
+| `monitor_cert_health.py`             | Verificación de salud de los feeds                       |
+| `requirements.txt`                   | Dependencias necesarias                                  |
+| `.flake8`                             | Reglas de estilo para flake8                             |
+| `.sonarcloud.properties`             | Configuración para SonarCloud                            |
+| `README.md`                           | Documentación principal                                  |
 
 
-
-
----
 
 ✨ Características Nuevas (v3.1.0)
 
