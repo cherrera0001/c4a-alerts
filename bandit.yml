@@ -1,0 +1,22 @@
+# bandit.yml
+profiles:
+  default:
+    include:
+      - B101  # assert usado (riesgo de deshabilitar en producción)
+      - B102  # uso de exec (muy riesgoso si no se controla)
+      - B105  # password hardcoded
+      - B108  # archivos temp inseguros
+      - B110  # try/except/pass sin acción
+      - B112  # logging config capturado sin control
+      - B301  # uso de pickle (inseguro)
+      - B303  # uso de cifrado inseguro
+      - B304  # uso de hash débil (MD5/SHA1)
+      - B311  # uso de random de Python (no criptográficamente seguro)
+    exclude:
+      - B404  # subprocess (permitido si lo validamos)
+      - B603  # uso de subprocess sin shell=True (no es crítico en tu código)
+
+skips: []
+
+severity: LOW
+confidence: MEDIUM
