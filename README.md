@@ -8,36 +8,10 @@ Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de 
 # 🛡️ C4A Alerts
 
 Sistema modular de alerta temprana para amenazas, CVEs, PoCs y noticias de seguridad, automatizado en GitHub Actions.
-
 ---
-c4a-alerts/
-├── src/
-│   ├── collector.py            # Recolector de CVEs y PoCs
-│   ├── notifier.py             # Envío de mensajes a Telegram
-│   ├── secure_storage.py       # Historial cifrado en GitHub Gist
-│   ├── utils.py                # Funciones comunes y validaciones
-│   └── sources/                # Integraciones de datos
-│       ├── reddit.py
-│       ├── exploitdb.py
-│       ├── threatfeeds.py
-│       ├── cert.py
-│       ├── cisa.py
-│       ├── mitre.py
-│       ├── stepsecurity.py
-│       ├── github_advisories.py  # 🆕 GitHub Security Advisories
-├── test/                        # Pruebas unitarias
-├── .github/
-│   └── workflows/
-│       ├── telegram-alert.yml    # Envío de alertas (cada 2 horas)
-│       ├── code_quality.yml      # Análisis de calidad (flake8, bandit)
-│       ├── sonarcloud-analysis.yml  # Análisis de bugs y deuda técnica
-│       ├── health_check.yml      # Monitoreo de salud de fuentes CERT
-├── main.py                      # Ejecución principal
-├── monitor_cert_health.py        # Verificación de salud de feeds
-├── requirements.txt              # Dependencias necesarias
-├── .flake8                       # Reglas de estilo
-├── .sonarcloud.properties        # Configuración SonarCloud
-└── README.md
+
+![image](https://github.com/user-attachments/assets/efb1985d-c62a-49f1-910e-88bee544cd2d)
+
 
 
 
