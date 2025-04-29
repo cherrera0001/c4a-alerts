@@ -171,6 +171,13 @@ Cumplimiento básico de OWASP ASVS en almacenamiento y comunicación
 
 -----
 
+## ☁️ ¿Por qué `C4A-Alerts` es Serverless?
 
+| Concepto                             | ¿C4A-Alerts cumple? ✅ | Justificación técnica                                                                                                                                     |
+|--------------------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **No gestión directa de servidores** | ✅                     | Tú no administras servidores físicos ni VPS: el bot corre en **GitHub Actions**, que es una plataforma CI/CD administrada.                              |
+| **Pago por uso / gratuito**          | ✅                     | GitHub Actions usa **tiers gratuitos o por uso**, y ejecuta tu código solo cuando ocurre un trigger (`push`, `schedule`, etc). **No pagas** por servidor. |
+| **Escala automática (limitada)**     | ✅                     | GitHub ejecuta workflows bajo demanda. Aunque tiene límites, **escala a múltiples ejecuciones concurrentes** sin que debas escalar servidores.           |
+| **Infraestructura abstracta**        | ✅                     | No necesitas instalar SO, parchear, ni monitorear hardware. Solo defines el flujo (`.yml`) y el script (`python`) que debe ejecutarse.                  |
+| **Event-driven (disparado por eventos)** | ✅                 | El sistema corre automáticamente por **horarios programados** (`cron`) o por eventos como `push`. Modelo clásico **serverless**: ejecución bajo demanda. |
 
-![test](https://github.com/user-attachments/assets/af972a8b-a743-438c-b37e-261b142716e8)
