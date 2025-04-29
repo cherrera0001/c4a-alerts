@@ -64,7 +64,7 @@ c4a-alerts/
 
 📤 telegram-alert.yml
 
-Se ejecuta cada 5 minutos:
+Se ejecuta cada 2 horas (tiempo configurable):
 
 1. Recupera CVEs, PoCs y Noticias de Amenazas
 
