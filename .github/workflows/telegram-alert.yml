@@ -2,8 +2,8 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    -  cron: '0 */2 * * *' # Ejecutar a los minutos 0, cada 2 horas.” Es decir: a las 00:00, 02:00, 04:00, ..., 22:00.
-  workflow_dispatch:        # Permite ejecución manual
+    - cron: '0 */2 * * *'  # Ejecutar a los minutos 0, cada 2 horas: 00:00, 02:00, ...
+  workflow_dispatch:
 
 jobs:
   send_alerts:
@@ -25,6 +25,12 @@ jobs:
           pip install sentence-transformers --no-deps
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install numpy scikit-learn
+          pip install gspread google-auth python-dotenv
+
+      - name: Decodificar clave Looker Studio
+        run: |
+          mkdir -p tools/sync
+          echo "$LOOKER_KEY_B64" | base64 -d > tools/sync/looker-key.json
 
       - name: Ejecutar alerta principal
         env:
@@ -33,12 +39,14 @@ jobs:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
-          GHSA_TOKEN: ${{ secrets.GHSA_TOKEN }} 
+          GHSA_TOKEN: ${{ secrets.GHSA_TOKEN }}
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+          LOOKER_KEY_B64: ${{ secrets.LOOKER_KEY_B64 }}
+          LOOKER_SHEET_ID: ${{ secrets.LOOKER_SHEET_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ENABLE_OPENAI: "false"  # Desactivado por defecto
+          ENABLE_OPENAI: "false"
           HF_HUB_DISABLE_TELEMETRY: "1"
           HF_HUB_DISABLE_PROGRESS_BARS: "1"
         run: python main.py
