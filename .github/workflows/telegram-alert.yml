@@ -2,7 +2,7 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    -  cron: '0 */2 * * *' # Ejecuta cada 50 minutos
+    -  cron: '0 */2 * * *' # Ejecutar a los minutos 0, cada 2 horas.” Es decir: a las 00:00, 02:00, 04:00, ..., 22:00.
   workflow_dispatch:        # Permite ejecución manual
 
 jobs:
@@ -34,6 +34,9 @@ jobs:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
           GIST_ID: ${{ secrets.GIST_ID }}
           GHSA_TOKEN: ${{ secrets.GHSA_TOKEN }} 
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ENABLE_OPENAI: "false"  # Desactivado por defecto
           HF_HUB_DISABLE_TELEMETRY: "1"
