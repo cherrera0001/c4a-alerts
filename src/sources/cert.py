@@ -4,9 +4,7 @@ import feedparser
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 
-# Listado ampliado de CERTs confiables y activos
 CERT_FEEDS = {
-    # Nacionales
     "CISA-US": "https://www.cisa.gov/uscert/ncas/alerts.xml",
     "CERT-FR": "https://www.cert.ssi.gouv.fr/feed/",
     "CERT-BR": "https://www.cert.br/rss/feed/alertas/",
@@ -14,13 +12,9 @@ CERT_FEEDS = {
     "CERT-MX": "https://www.gob.mx/certmx/rss",
     "JPCERT-JP": "https://www.jpcert.or.jp/english/rss/jpcert-en.rdf",
     "NCSC-UK": "https://www.ncsc.gov.uk/api/1/services/v1/report-rss-feed.xml",
-    # Sectoriales
-    "ICS-CERT": "https://www.cisa.gov/uscert/ics/alerts.xml",
-    # Opcional: (cuando ANCI Chile habilite RSS/API)
-    # "ANCI-CL": "https://www.anci.gob.cl/feed/seguridad.xml"
+    "ICS-CERT": "https://www.cisa.gov/uscert/ics/alerts.xml"
 }
 
-# Header mejorado con User-Agent dinámico para prevenir bloqueos
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -30,9 +24,6 @@ HEADERS = {
 }
 
 def fetch_cert_alerts(limit: int = 20) -> List[Dict[str, Any]]:
-    """
-    Descarga y procesa alertas de los CERTs nacionales e internacionales disponibles vía RSS o APIs públicas.
-    """
     logging.info("[cert] Consultando alertas de los CERTs...")
     all_alerts = []
     now = datetime.utcnow()
@@ -40,8 +31,7 @@ def fetch_cert_alerts(limit: int = 20) -> List[Dict[str, Any]]:
 
     session = requests.Session()
     adapter = requests.adapters.HTTPAdapter(max_retries=2)
-    session.mount('https://', adapter)
-    session.mount('http://', adapter)
+    session.mount('https://', adapter)  # ✅ Solo HTTPS
 
     for cert_name, feed_url in CERT_FEEDS.items():
         try:
@@ -62,7 +52,7 @@ def fetch_cert_alerts(limit: int = 20) -> List[Dict[str, Any]]:
                     pub_date = datetime(*entry.updated_parsed[:6])
 
                 if pub_date and pub_date < week_ago:
-                    continue  # Ignorar alertas de más de 7 días
+                    continue
 
                 alert = {
                     "title": getattr(entry, 'title', 'No title'),
@@ -79,16 +69,12 @@ def fetch_cert_alerts(limit: int = 20) -> List[Dict[str, Any]]:
 
         except requests.exceptions.HTTPError as e:
             logging.error(f"❌ HTTP error ({response.status_code}) en {cert_name}: {e}")
-            continue
         except requests.exceptions.Timeout:
             logging.error(f"⏳ Timeout al conectar con {cert_name}")
-            continue
         except requests.exceptions.ConnectionError:
             logging.error(f"❌ Error de conexión a {cert_name}")
-            continue
         except Exception as e:
             logging.error(f"❌ Error inesperado procesando {cert_name}: {e}")
-            continue
 
     logging.info(f"[cert] Total alertas recopiladas: {len(all_alerts)}")
     return all_alerts
