@@ -158,12 +158,15 @@ Cumplimiento básico de OWASP ASVS en almacenamiento y comunicación
 
 
 ---
-📊 Diagrama de Flujo Simplificado
+### 📊 Diagrama de Flujo Simplificado
 
-+----------------+         +-------------------------+          +--------------------+
-| GitHub Actions | --GET-> | Múltiples fuentes CVE/PoC | --POST-> | Telegram Bot API   |
-| (cada 5 min)   |         | CIRCL / GitHub / Reddit |          | Chat/Grupo/Canal   |
-+----------------+         +-------------------------+          +--------------------+
+```plaintext
++------------------+         +------------------------------+         +-----------------------+
+|  GitHub Actions  | --GET-> |  Múltiples fuentes CVE/PoC  | --POST->|   Telegram Bot API    |
+|  (cada 2 horas)  |         | CIRCL / GitHub / Reddit     |         | Chat / Grupo / Canal  |
++------------------+         +------------------------------+         +-----------------------+
+```
+
 
 
 ---
