@@ -39,16 +39,17 @@ Sistema modular de alerta temprana para amenazas, CVEs, PoCs y noticias de segur
 
 
 
-✨ Características Nuevas (v3.1.0)
+## ✨ Características Nuevas en `v3.1.0`
 
-✅ Control de duplicados con historial cifrado (AES-256-GCM)
-✅ Integración con GitHub Security Advisories
-✅ Filtrado inteligente por palabras clave críticas
-✅ Monitoreo de feeds nacionales e internacionales (CERTs, CISA, etc.)
-✅ Sistema modular y escalable (fuentes fáciles de añadir)
-✅ Análisis de seguridad (Bandit) y calidad de código (Flake8, SonarCloud)
-✅ Automatización completa en GitHub Actions
-
+| Característica                                               | Descripción breve                                                                                      |
+|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| ✅ Historial cifrado (AES-256-GCM)                           | Se evita el reenvío de alertas duplicadas mediante control persistente y seguro.                       |
+| ✅ GitHub Security Advisories                                | Nueva fuente integrada vía GraphQL para CVEs y alertas oficiales desde GitHub.                         |
+| ✅ Filtrado por keywords críticas                            | Detección inteligente de amenazas con palabras como `RCE`, `0day`, `bypass`, `exploit`, etc.            |
+| ✅ Monitoreo de CERTs y CISA                                 | Incluye alertas de múltiples fuentes nacionales e internacionales de ciberseguridad.                   |
+| ✅ Sistema modular                                           | Arquitectura lista para escalar: nuevas fuentes se integran con mínimo esfuerzo.                       |
+| ✅ Análisis de seguridad y calidad                           | Bandit (vulnerabilidades), Flake8 (estilo), SonarCloud (bugs, deuda técnica).                          |
+| ✅ 100% Automatizado en GitHub Actions                       | No requiere VPS ni servidores, se ejecuta de forma serverless bajo eventos programados (`cron`).        |
 
 ---
 
