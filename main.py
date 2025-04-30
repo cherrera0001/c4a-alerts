@@ -15,6 +15,7 @@ from src.collector import get_latest_cves, get_latest_pocs
 from src.manager import ThreatAlertManager
 from src.telegram_bot import TelegramBot
 from src.secure_storage import load_sent_ids, save_sent_ids
+from tools.sync_to_looker import load_alerts, send_to_looker
 
 # Cargar variables de entorno
 load_dotenv()
@@ -105,6 +106,12 @@ def run_alerts() -> None:
 
         # 5. Guardar historial solo si el proceso fue exitoso
         save_sent_ids(sent_ids)
+
+        # 6. Exportar todo a Looker Studio
+        all_alerts = load_alerts()
+        if all_alerts:
+            send_to_looker(all_alerts)
+
         info("✅ Ejecución de alertas completada exitosamente.")
 
     except KeyboardInterrupt:
