@@ -43,9 +43,8 @@ jobs:
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
-          LOOKER_KEY_B64: ${{ secrets.LOOKER_KEY_B64 }}
           LOOKER_SHEET_ID: ${{ secrets.LOOKER_SHEET_ID }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LOOKER_KEY_B64: ${{ secrets.LOOKER_KEY_B64 }}
           ENABLE_OPENAI: "false"
           HF_HUB_DISABLE_TELEMETRY: "1"
           HF_HUB_DISABLE_PROGRESS_BARS: "1"
