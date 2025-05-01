@@ -2,7 +2,7 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    - cron: '0 */2 * * *'  # Ejecutar a los minutos 0, cada 2 horas: 00:00, 02:00, ...
+    - cron: '0 */2 * * *'  # Ejecutar a los minutos 0, cada 2 horas
   workflow_dispatch:
 
 jobs:
@@ -22,10 +22,6 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install sentence-transformers --no-deps
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install numpy scikit-learn
-          pip install gspread google-auth python-dotenv
 
       - name: Decodificar clave Looker Studio
         run: |
