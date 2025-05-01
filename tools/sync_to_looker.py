@@ -2,47 +2,50 @@ import os
 import json
 import logging
 from datetime import datetime
-from dotenv import load_dotenv
 import gspread
 from google.oauth2.service_account import Credentials
+from dotenv import load_dotenv
+from pathlib import Path
+import base64
 
 # Cargar variables de entorno
 load_dotenv()
 
 SHEET_ID = os.getenv("LOOKER_SHEET_ID")
-SERVICE_ACCOUNT_FILE = os.getenv("LOOKER_KEY_PATH", "looker-key.json")
-JSON_PATH = "alerts_history.json"
+LOOKER_KEY_B64 = os.getenv("LOOKER_KEY_B64")
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+TEMP_KEY_PATH = "tools/sync/looker-key.json"
 
 
-def load_alerts():
-    if not os.path.exists(JSON_PATH):
-        logging.warning(f"[Looker] Archivo {JSON_PATH} no encontrado.")
-        return []
+def decode_looker_key():
+    if not LOOKER_KEY_B64:
+        logging.error("❌ LOOKER_KEY_B64 no está configurado.")
+        return False
 
-    with open(JSON_PATH, "r") as file:
-        try:
-            return json.load(file)
-        except json.JSONDecodeError as e:
-            logging.error(f"[Looker] ❌ Error al parsear JSON: {e}")
-            return []
+    Path("tools/sync").mkdir(parents=True, exist_ok=True)
+    try:
+        with open(TEMP_KEY_PATH, "wb") as f:
+            f.write(base64.b64decode(LOOKER_KEY_B64))
+        return True
+    except Exception as e:
+        logging.error(f"❌ Error decodificando clave Looker: {e}")
+        return False
 
 
 def send_to_looker(alerts):
-    if not SHEET_ID or not os.path.exists(SERVICE_ACCOUNT_FILE):
-        logging.error("❌ LOOKER_SHEET_ID o la clave de servicio JSON no están configuradas correctamente.")
+    if not SHEET_ID or not decode_looker_key():
+        logging.error("❌ Faltan variables LOOKER_SHEET_ID o LOOKER_KEY_B64 inválida.")
         return
 
-    # Autenticación segura con Google Sheets
     creds = Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
+        TEMP_KEY_PATH,
         scopes=SCOPES
     )
     client = gspread.authorize(creds)
 
     try:
-        sheet = client.open_by_key(SHEET_ID).sheet1  # Primera pestaña
+        sheet = client.open_by_key(SHEET_ID).sheet1
     except Exception as e:
         logging.error(f"❌ Error al abrir la hoja: {e}")
         return
@@ -62,11 +65,3 @@ def send_to_looker(alerts):
         logging.info(f"✅ {len(rows)} registros enviados exitosamente a Looker Studio (Google Sheets).")
     except Exception as e:
         logging.error(f"❌ Error enviando datos a la hoja: {e}")
-
-
-if __name__ == "__main__":
-    alerts = load_alerts()
-    if alerts:
-        send_to_looker(alerts)
-    else:
-        logging.warning("[Looker] No hay datos para exportar.")
