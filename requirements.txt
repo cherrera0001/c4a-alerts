@@ -11,3 +11,6 @@ openai>=1.0.0
 flake8>=6.1.0
 bandit>=1.7.5
 huggingface_hub[hf_xet]
+gspread
+google-auth
+python-dotenv
