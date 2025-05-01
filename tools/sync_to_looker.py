@@ -57,7 +57,7 @@ def send_to_looker(alerts):
         sheet = client.open_by_key(SHEET_ID).sheet1
         logging.info("📄 Conexión con Google Sheet establecida exitosamente.")
     except Exception as e:
-        logging.error(f"❌ Error al autorizar cliente o abrir la hoja de cálculo: {e}")
+        logging.error(f"❌ Error al autorizar cliente o abrir la hoja de cálculo: {str(e)}")
         return
 
     rows = []
