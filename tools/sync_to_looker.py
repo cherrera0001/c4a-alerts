@@ -17,6 +17,7 @@ LOOKER_KEY_B64 = os.getenv("LOOKER_KEY_B64")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 TEMP_KEY_PATH = "tools/sync/looker-key.json"
 
+
 def decode_looker_key():
     if not LOOKER_KEY_B64:
         logging.error("❌ LOOKER_KEY_B64 no está configurado.")
@@ -31,6 +32,7 @@ def decode_looker_key():
     except Exception as e:
         logging.error(f"❌ Error decodificando clave Looker: {e}")
         return False
+
 
 def send_to_looker(alerts):
     if not SHEET_ID:
@@ -47,7 +49,7 @@ def send_to_looker(alerts):
         )
         logging.info("✅ Credenciales cargadas correctamente desde archivo temporal.")
     except Exception as e:
-        logging.exception("❌ Error cargando credenciales:")
+        logging.error(f"❌ Error cargando credenciales: {e}")
         return
 
     try:
@@ -55,7 +57,7 @@ def send_to_looker(alerts):
         sheet = client.open_by_key(SHEET_ID).sheet1
         logging.info("📄 Conexión con Google Sheet establecida exitosamente.")
     except Exception as e:
-        logging.exception("❌ Error al autorizar cliente o abrir la hoja de cálculo:")
+        logging.error(f"❌ Error al autorizar cliente o abrir la hoja de cálculo: {str(e)}")
         return
 
     rows = []
@@ -64,7 +66,7 @@ def send_to_looker(alerts):
             alert.get("published", datetime.utcnow().isoformat()),
             alert.get("source", "N/A"),
             alert.get("title", "N/A"),
-            alert.get("description", "")[:100],
+            alert.get("description") or alert.get("title"),  # Fallback a título si no hay descripción
             alert.get("url", "")
         ])
 
@@ -72,4 +74,4 @@ def send_to_looker(alerts):
         sheet.append_rows(rows, value_input_option="USER_ENTERED")
         logging.info(f"✅ {len(rows)} registros enviados exitosamente a Looker Studio (Google Sheets).")
     except Exception as e:
-        logging.exception("❌ Error enviando datos a la hoja:")
+        logging.error(f"❌ Error enviando datos a la hoja: {e}")
