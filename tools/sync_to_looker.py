@@ -62,13 +62,13 @@ def send_to_looker(alerts):
 
     rows = []
     for alert in alerts:
-        rows.append([
-            alert.get("published", datetime.utcnow().isoformat()),
-            alert.get("source", "N/A"),
-            alert.get("title", "N/A"),
-            alert.get("description") or alert.get("title"),  # Fallback a título si no hay descripción
-            alert.get("url", "")
-        ])
+        published = alert.get("published", datetime.utcnow().isoformat())
+        source = alert.get("source") or "N/A"
+        title = alert.get("title") or "(Sin título)"
+        description = alert.get("description") or title
+        url = alert.get("url") or "https://c4a.cl"
+
+        rows.append([published, source, title, description, url])
 
     try:
         sheet.append_rows(rows, value_input_option="USER_ENTERED")
