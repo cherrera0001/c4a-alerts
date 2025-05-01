@@ -27,6 +27,7 @@ def decode_looker_key():
     try:
         with open(TEMP_KEY_PATH, "wb") as f:
             f.write(base64.b64decode(LOOKER_KEY_B64))
+        logging.info("🔐 Clave Looker decodificada y escrita correctamente.")
         return True
     except Exception as e:
         logging.error(f"❌ Error decodificando clave Looker: {e}")
@@ -34,20 +35,29 @@ def decode_looker_key():
 
 
 def send_to_looker(alerts):
-    if not SHEET_ID or not decode_looker_key():
-        logging.error("❌ Faltan variables LOOKER_SHEET_ID o LOOKER_KEY_B64 inválida.")
+    if not SHEET_ID:
+        logging.error("❌ LOOKER_SHEET_ID no está configurado.")
+        return
+    if not decode_looker_key():
+        logging.error("❌ No se pudo decodificar la clave Looker.")
         return
 
-    creds = Credentials.from_service_account_file(
-        TEMP_KEY_PATH,
-        scopes=SCOPES
-    )
-    client = gspread.authorize(creds)
+    try:
+        creds = Credentials.from_service_account_file(
+            TEMP_KEY_PATH,
+            scopes=SCOPES
+        )
+        logging.info("✅ Credenciales cargadas correctamente desde archivo temporal.")
+    except Exception as e:
+        logging.error(f"❌ Error cargando credenciales: {e}")
+        return
 
     try:
+        client = gspread.authorize(creds)
         sheet = client.open_by_key(SHEET_ID).sheet1
+        logging.info("📄 Conexión con Google Sheet establecida exitosamente.")
     except Exception as e:
-        logging.error(f"❌ Error al abrir la hoja: {e}")
+        logging.error(f"❌ Error al autorizar cliente o abrir la hoja de cálculo: {e}")
         return
 
     rows = []
