@@ -7,6 +7,7 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 from pathlib import Path
 import base64
+from dateutil import parser
 
 # Cargar variables de entorno
 load_dotenv()
@@ -16,7 +17,6 @@ LOOKER_KEY_B64 = os.getenv("LOOKER_KEY_B64")
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 TEMP_KEY_PATH = "tools/sync/looker-key.json"
-
 
 def decode_looker_key():
     if not LOOKER_KEY_B64:
@@ -33,6 +33,16 @@ def decode_looker_key():
         logging.error(f"❌ Error decodificando clave Looker: {e}")
         return False
 
+def parse_date(value):
+    try:
+        if isinstance(value, str):
+            dt = parser.parse(value)
+            return dt.strftime("%d/%m/%Y %H:%M:%S")
+        elif isinstance(value, datetime):
+            return value.strftime("%d/%m/%Y %H:%M:%S")
+    except Exception as e:
+        logging.warning(f"⚠️ Error al convertir fecha: {value} ({e})")
+    return ""
 
 def send_to_looker(alerts):
     if not SHEET_ID:
@@ -62,7 +72,7 @@ def send_to_looker(alerts):
 
     rows = []
     for alert in alerts:
-        published = alert.get("published", datetime.utcnow().isoformat())
+        published = parse_date(alert.get("published"))
         source = alert.get("source") or "N/A"
         title = alert.get("title") or "(Sin título)"
         description = alert.get("description") or title
