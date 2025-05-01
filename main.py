@@ -108,8 +108,8 @@ def run_alerts() -> None:
         save_sent_ids(sent_ids)
 
         # 6. Exportar todo a Looker Studio con alertas completas
-        if manager.raw_alerts:
-            send_to_looker(manager.raw_alerts)
+        if manager.alerts:
+            send_to_looker(manager.alerts)
 
         info("✅ Ejecución de alertas completada exitosamente.")
 
