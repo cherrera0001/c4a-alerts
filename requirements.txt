@@ -15,3 +15,5 @@ huggingface_hub[hf_xet]
 gspread>=5.11.0
 google-auth>=2.22.0
 python-dateutil>=2.8.2
+feedparser==6.0.11
+beautifulsoup4==4.12.2
