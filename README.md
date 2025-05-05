@@ -74,12 +74,3 @@ pip install -r requirements.txt
 # Ejecutar pruebas
 python -m unittest discover -s test
 
----
-## 🌐 Mantenido por @cherrera0001
-
-    ¿Quieres contribuir? ¡Forkea, personaliza tus secrets y comienza a monitorear ciberamenazas en minutos!
-
-
----
-
-¿Deseas que lo suba por ti como archivo `.md` o lo empaquete junto al resto del código del repo?
