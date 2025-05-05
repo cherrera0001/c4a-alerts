@@ -10,37 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write  # Requerido para federación con GCP (OIDC)
+      id-token: write       # Para autenticación federada con Google Cloud (WIF)
       contents: read
 
     steps:
-      - name: Checkout código
+      - name: 📥 Clonar el repositorio
         uses: actions/checkout@v4
 
-      - name: Revisar carga de secrets WIF (debug temporal)
-        run: |
-          echo "🔍 WIF_PROVIDER=${{ secrets.WIF_PROVIDER }}"
-          echo "🔍 WIF_SERVICE_ACCOUNT=${{ secrets.WIF_SERVICE_ACCOUNT }}"
-
-      - name: Autenticación segura en Google Cloud
+      - name: ⚙️ Autenticación con Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-          export_environment_variables: true  # Opcional: define GOOGLE_APPLICATION_CREDENTIALS automáticamente
-          create_credentials_file: true       # Para compatibilidad con gspread y otras libs
+          export_environment_variables: true
+          create_credentials_file: true
 
-      - name: Configurar Python
+      - name: 🐍 Configurar entorno Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instalar dependencias
+      - name: 📦 Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Ejecutar alerta principal
+      - name: 🚨 Ejecutar sistema de alertas
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -56,3 +51,7 @@ jobs:
           HF_HUB_DISABLE_TELEMETRY: "1"
           HF_HUB_DISABLE_PROGRESS_BARS: "1"
         run: python main.py
+
+      - name: ✅ Confirmar ejecución exitosa
+        if: success()
+        run: echo "✔️ Ejecución finalizada correctamente"
