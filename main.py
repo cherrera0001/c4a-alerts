@@ -26,8 +26,10 @@ os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
 CRITICAL_KEYWORDS = [
     "rce", "remote code execution", "bypass", "0day", "zero-day",
-    "privesc", "privilege escalation", "exploit", "critical"
+    "privesc", "privilege escalation", "exploit", "critical", "crítico",
+    "falabella", "sodimac", "tottus", "linio", "banco falabella"
 ]
+
 
 def run_alerts() -> None:
     try:
@@ -52,8 +54,10 @@ def run_alerts() -> None:
             "ThreatFeeds": fetch_threat_feeds,
             "Reddit": fetch_reddit_posts,
             "ExploitDB": fetch_exploitdb_alerts,
-            "GitHub Advisories": fetch_github_advisories
+            "GitHub Advisories": fetch_github_advisories,
+            "CSIRT Chile": fetch_csirt_cl_alerts  # ← esta línea nueva
         }
+
 
         info("🔎 Consultando todas las fuentes configuradas...")
         for source_name, fetch_func in all_sources.items():
