@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+logs/
+.env
+test_looker_key.json
+*.sqlite3
+.idea/
+.vscode/

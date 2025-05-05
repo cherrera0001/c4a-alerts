@@ -11,6 +11,7 @@ from src.sources.threatfeeds import fetch_threat_feeds
 from src.sources.reddit import fetch_reddit_posts
 from src.sources.exploitdb import fetch_exploitdb_alerts
 from src.sources.github_advisories import fetch_github_advisories
+from src.sources.csirtcl import fetch_csirt_cl_alerts
 from src.collector import get_latest_cves, get_latest_pocs
 from src.manager import ThreatAlertManager
 from src.telegram_bot import TelegramBot
