@@ -1,4 +1,3 @@
-
 import requests
 import socket
 import xml.etree.ElementTree as ET
@@ -6,10 +5,11 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import List, Dict
 from ..logger import info, warning, error
+import os
 
 def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
     url = "https://csirt.gob.cl/rss/alertas"
-    fallback_file = "fallback_csirt_alertas.xml"
+    fallback_file = os.path.join(os.path.dirname(__file__), "fallback_csirt_alertas.xml")
     alerts = []
 
     headers = {
@@ -18,8 +18,13 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
         "Referer": "https://csirt.gob.cl/"
     }
 
+    xml_content = None
+
     try:
+        # Validar DNS antes de intentar
         socket.gethostbyname("csirt.gob.cl")
+
+        # Descargar feed oficial
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
@@ -28,10 +33,13 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
             f.write(xml_content)
         info("[CSIRT Chile] Feed descargado y respaldado localmente.")
 
-    except requests.exceptions.HTTPError as http_err:
-        warning(f"[CSIRT Chile] HTTP error: {http_err} — Intentando leer respaldo.")
+    except requests.exceptions.RequestException as http_err:
+        warning(f"[CSIRT Chile] HTTP error: {http_err} — Intentando leer respaldo local...")
     except Exception as e:
-        warning(f"[CSIRT Chile] Fallo al descargar el feed: {e}. Intentando leer archivo local...")
+        warning(f"[CSIRT Chile] Error de red: {e} — Intentando leer respaldo local...")
+
+    # Leer desde respaldo si no se pudo obtener el feed online
+    if not xml_content:
         try:
             with open(fallback_file, "r", encoding="utf-8") as f:
                 xml_content = f.read()
@@ -40,6 +48,7 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
             error(f"[CSIRT Chile] No se pudo leer archivo local de respaldo: {local_err}")
             return []
 
+    # Procesar el contenido XML
     try:
         xml_content = xml_content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
         root = ET.fromstring(xml_content)
@@ -56,6 +65,7 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
                 guid = item.findtext("guid", default=link).strip()
                 pub_date_raw = item.findtext("pubDate", default="").strip()
 
+                # Fecha con múltiples formatos
                 published = None
                 for fmt in ["%a, %d %b %Y %H:%M:%S %z", "%Y-%m-%dT%H:%M:%S%z"]:
                     try:
@@ -67,11 +77,13 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
                     warning(f"[CSIRT Chile] pubDate inválido: {pub_date_raw}. Usando fecha actual.")
                     published = datetime.now()
 
+                # Procesar descripción
                 raw_description = item.findtext("description", default="").strip()
                 soup = BeautifulSoup(raw_description, "html.parser")
 
                 image_urls = [img["src"] for img in soup.find_all("img") if img.get("src")]
                 desc_text = soup.get_text(strip=True)
+
                 if image_urls and not desc_text:
                     description = image_urls[0]
                 elif image_urls and desc_text:
@@ -83,6 +95,7 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
 
                 categories = [cat.text.strip() for cat in item.findall("category")]
 
+                # Severidad basada en heurística del título
                 severity = "medium"
                 t = title.lower()
                 if "crítico" in t or "critical" in t:
