@@ -6,6 +6,19 @@ from typing import List, Dict
 from ..logger import info, warning
 from bs4 import BeautifulSoup
 
+def extract_description(entry) -> str:
+    """Extrae una descripción útil incluso si solo hay una imagen en el feed."""
+    try:
+        soup = BeautifulSoup(entry.get("description", ""), "html.parser")
+        img = soup.find("img")
+        if img:
+            if img.has_attr("src"):
+                return f"Sin texto. Ver imagen: {img['src']}"
+            elif img.has_attr("alt"):
+                return f"Sin texto. Imagen: {img['alt']}"
+        return "S/I"
+    except Exception:
+        return "S/I"
 
 def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
     """
@@ -20,8 +33,7 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
 
         for entry in feed.entries[:limit]:
             title = entry.get("title", "")
-            raw_description = entry.get("description", "")
-            description = BeautifulSoup(raw_description, "html.parser").text.strip()
+            description = extract_description(entry)
             link = entry.get("link", "")
             published = entry.get("published_parsed")
 
@@ -36,7 +48,7 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
             alerts.append({
                 "id": entry.get("id", link),
                 "title": title,
-                "description": description or "S/I",
+                "description": description,
                 "published": datetime(*published[:6]) if published else datetime.now(),
                 "source": "CSIRT Chile",
                 "url": link,
