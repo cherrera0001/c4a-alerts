@@ -1,4 +1,5 @@
-import feedparser
+import requests
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import List, Dict
 from ..logger import info, warning
@@ -6,37 +7,37 @@ from bs4 import BeautifulSoup
 
 
 def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
-    """
-    Obtiene alertas de seguridad desde el RSS de CSIRT Chile.
-    Se asegura de incluir entradas aunque solo tengan imagen.
-    """
-    alerts = []
     url = "https://csirt.gob.cl/rss/alertas"
+    alerts = []
 
     try:
-        feed = feedparser.parse(url)
-        total = len(feed.entries)
-        if total == 0:
-            warning("[CSIRT Chile] El feed no contiene entradas.")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        root = ET.fromstring(response.content)
+        items = root.findall(".//item")
+
+        if not items:
+            warning("[CSIRT Chile] El feed fue leído pero no contiene <item>. Revisa el formato XML.")
             return []
 
-        for entry in feed.entries[:limit]:
-            title = entry.get("title", "").strip()
-            link = entry.get("link", "").strip()
-            guid = entry.get("id", link)
+        for item in items[:limit]:
+            title = item.findtext("title", default="").strip()
+            link = item.findtext("link", default="").strip()
+            guid = item.findtext("guid", default=link).strip()
 
-            # Publicación
+            pub_date_raw = item.findtext("pubDate", default="")
             try:
-                published = datetime(*entry.published_parsed[:6])
+                published = datetime.strptime(pub_date_raw, "%a, %d %b %Y %H:%M:%S %z")
             except Exception:
                 published = datetime.now()
 
-            # Parsear descripción (imagen embebida)
-            soup = BeautifulSoup(entry.get("description", ""), "html.parser")
+            raw_description = item.findtext("description", default="").strip()
+            soup = BeautifulSoup(raw_description, "html.parser")
             img = soup.find("img")
             description = img["src"] if img and img.has_attr("src") else "Sin descripción visible."
 
-            # Severidad básica desde título
+            # Nivel de severidad
             severity = "medium"
             if "crítico" in title.lower():
                 severity = "critical"
@@ -55,9 +56,9 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
                 "severity": severity
             })
 
-        info(f"[CSIRT Chile] {len(alerts)} alertas obtenidas correctamente de {total} entradas RSS.")
+        info(f"[CSIRT Chile] {len(alerts)} alertas obtenidas correctamente del XML.")
 
     except Exception as e:
-        warning(f"[CSIRT Chile] Error al obtener o procesar el feed: {str(e)}")
+        warning(f"[CSIRT Chile] Error crítico al parsear el feed XML: {str(e)}")
 
     return alerts
