@@ -1,42 +1,42 @@
-# src/sources/csirtcl.py
-
 import feedparser
 from datetime import datetime
 from typing import List, Dict
 from ..logger import info, warning
 from bs4 import BeautifulSoup
 
-def extract_description(entry) -> str:
-    """Extrae una descripción útil incluso si solo hay una imagen en el feed."""
-    try:
-        soup = BeautifulSoup(entry.get("description", ""), "html.parser")
-        img = soup.find("img")
-        if img:
-            if img.has_attr("src"):
-                return f"Sin texto. Ver imagen: {img['src']}"
-            elif img.has_attr("alt"):
-                return f"Sin texto. Imagen: {img['alt']}"
-        return "S/I"
-    except Exception:
-        return "S/I"
 
 def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
     """
-    Obtiene alertas de seguridad desde el feed RSS de CSIRT Chile.
-    Retorna una lista de diccionarios normalizados.
+    Obtiene alertas de seguridad desde el RSS de CSIRT Chile.
+    Se asegura de incluir entradas aunque solo tengan imagen.
     """
     alerts = []
     url = "https://csirt.gob.cl/rss/alertas"
 
     try:
         feed = feedparser.parse(url)
+        total = len(feed.entries)
+        if total == 0:
+            warning("[CSIRT Chile] El feed no contiene entradas.")
+            return []
 
         for entry in feed.entries[:limit]:
-            title = entry.get("title", "")
-            description = extract_description(entry)
-            link = entry.get("link", "")
-            published = entry.get("published_parsed")
+            title = entry.get("title", "").strip()
+            link = entry.get("link", "").strip()
+            guid = entry.get("id", link)
 
+            # Publicación
+            try:
+                published = datetime(*entry.published_parsed[:6])
+            except Exception:
+                published = datetime.now()
+
+            # Parsear descripción (imagen embebida)
+            soup = BeautifulSoup(entry.get("description", ""), "html.parser")
+            img = soup.find("img")
+            description = img["src"] if img and img.has_attr("src") else "Sin descripción visible."
+
+            # Severidad básica desde título
             severity = "medium"
             if "crítico" in title.lower():
                 severity = "critical"
@@ -46,18 +46,18 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
                 severity = "low"
 
             alerts.append({
-                "id": entry.get("id", link),
+                "id": guid,
                 "title": title,
                 "description": description,
-                "published": datetime(*published[:6]) if published else datetime.now(),
+                "published": published,
                 "source": "CSIRT Chile",
                 "url": link,
                 "severity": severity
             })
 
-        info(f"[CSIRT Chile] {len(alerts)} alertas obtenidas correctamente.")
+        info(f"[CSIRT Chile] {len(alerts)} alertas obtenidas correctamente de {total} entradas RSS.")
 
     except Exception as e:
-        warning(f"[CSIRT Chile] Error al obtener alertas: {str(e)}")
+        warning(f"[CSIRT Chile] Error al obtener o procesar el feed: {str(e)}")
 
     return alerts
