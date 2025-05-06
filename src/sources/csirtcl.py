@@ -1,3 +1,4 @@
+
 import requests
 import socket
 import xml.etree.ElementTree as ET
@@ -11,12 +12,15 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
     fallback_file = "fallback_csirt_alertas.xml"
     alerts = []
 
-    try:
-        # Verifica que DNS funcione correctamente
-        socket.gethostbyname("csirt.gob.cl")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/rss+xml,application/xml",
+        "Referer": "https://csirt.gob.cl/"
+    }
 
-        # Intenta descargar el contenido XML
-        response = requests.get(url, timeout=10)
+    try:
+        socket.gethostbyname("csirt.gob.cl")
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
 
         xml_content = response.text
@@ -24,6 +28,8 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
             f.write(xml_content)
         info("[CSIRT Chile] Feed descargado y respaldado localmente.")
 
+    except requests.exceptions.HTTPError as http_err:
+        warning(f"[CSIRT Chile] HTTP error: {http_err} — Intentando leer respaldo.")
     except Exception as e:
         warning(f"[CSIRT Chile] Fallo al descargar el feed: {e}. Intentando leer archivo local...")
         try:
@@ -61,14 +67,13 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
                     warning(f"[CSIRT Chile] pubDate inválido: {pub_date_raw}. Usando fecha actual.")
                     published = datetime.now()
 
-                # Extraer descripción y/o imagen
                 raw_description = item.findtext("description", default="").strip()
                 soup = BeautifulSoup(raw_description, "html.parser")
 
                 image_urls = [img["src"] for img in soup.find_all("img") if img.get("src")]
                 desc_text = soup.get_text(strip=True)
                 if image_urls and not desc_text:
-                    description = image_urls[0]  # solo imagen
+                    description = image_urls[0]
                 elif image_urls and desc_text:
                     description = f"{desc_text}\n\nImagen: {image_urls[0]}"
                 elif desc_text:
@@ -76,10 +81,8 @@ def fetch_csirt_cl_alerts(limit: int = 15) -> List[Dict]:
                 else:
                     description = "Sin descripción visible."
 
-                # Categorías si existen
                 categories = [cat.text.strip() for cat in item.findall("category")]
 
-                # Evaluar severidad
                 severity = "medium"
                 t = title.lower()
                 if "crítico" in t or "critical" in t:
