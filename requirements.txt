@@ -17,3 +17,5 @@ google-auth>=2.22.0
 python-dateutil>=2.8.2
 feedparser==6.0.11
 beautifulsoup4==4.12.2
+supabase>=2.0.0
+psycopg2-binary>=2.9.9
