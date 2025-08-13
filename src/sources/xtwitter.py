@@ -416,4 +416,32 @@ class TwitterSecuritySource(BaseSource):
                 'User-Agent': 'C4A-Alerts/2.0'
             }
             
-            start_time = datetime.utcnow
+            start_time = datetime.utcnow()
+            
+            async with self.session.get(url, params=params, headers=headers) as response:
+                end_time = datetime.utcnow()
+                latency = (end_time - start_time).total_seconds()
+                
+                if response.status == 200:
+                    data = await response.json()
+                    return {
+                        'status': 'healthy',
+                        'latency_seconds': latency,
+                        'api_response_code': response.status,
+                        'results_count': len(data.get('data', [])),
+                        'rate_limit_remaining': response.headers.get('x-rate-limit-remaining', 'unknown')
+                    }
+                else:
+                    return {
+                        'status': 'unhealthy',
+                        'latency_seconds': latency,
+                        'api_response_code': response.status,
+                        'error': f"API returned status {response.status}"
+                    }
+                    
+        except Exception as e:
+            return {
+                'status': 'unhealthy',
+                'error': str(e),
+                'latency_seconds': None
+            }
