@@ -2,7 +2,7 @@ name: C4A Telegram Alerts
 
 on:
   schedule:
-    - cron: '0 */2 * * *'  # Ejecutar cada 2 horas
+    - cron: '0 */2 * * *'   # Ejecutar cada 2 horas
   workflow_dispatch:
 
 jobs:
@@ -29,14 +29,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip'
 
       - name: 📦 Instalar dependencias
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: '1'
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: 🚨 Ejecutar sistema de alertas
         env:
+          # Telegram / otros ya existentes
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
@@ -50,6 +54,12 @@ jobs:
           ENABLE_OPENAI: "false"
           HF_HUB_DISABLE_TELEMETRY: "1"
           HF_HUB_DISABLE_PROGRESS_BARS: "1"
+
+          # 🔐 ANCI / MISP (nuevo)
+          # Si el secret aún está con el typo (ANCT_BASE_URL), el OR hace fallback.
+          ANCI_BASE_URL: ${{ secrets.ANCI_BASE_URL || secrets.ANCT_BASE_URL }}
+          ANCI_USERNAME: ${{ secrets.ANCI_USERNAME }}
+          ANCI_PASSWORD: ${{ secrets.ANCI_PASSWORD }}
         run: python main.py
 
       - name: ✅ Confirmar ejecución exitosa
