@@ -5,32 +5,24 @@ from html import unescape as html_unescape
 _MD2_ESCAPE_RE = re.compile(r'([_\*\[\]\(\)~`>#+\-=|{}.!])')
 
 def escape_markdown(text: str, version: int = 2) -> str:
-    """
-    Escapa caracteres especiales para Telegram Markdown.
-    Por defecto usa MarkdownV2 (version=2).
-    """
     if not text:
         return ""
     if version == 2:
         return _MD2_ESCAPE_RE.sub(r'\\\1', text)
-    # Markdown clásico
     return re.sub(r'([_\*\`\[\]])', r'\\\1', text)
 
 def strip_html(text: str) -> str:
-    """Elimina etiquetas HTML simples y decodifica entidades."""
     if not text:
         return ""
     no_tags = re.sub(r'<[^>]+>', '', text)
     return html_unescape(no_tags)
 
 def clean_whitespace(text: str) -> str:
-    """Compacta espacios en blanco consecutivos."""
     if not text:
         return ""
     return re.sub(r'\s+', ' ', text).strip()
 
 def truncate(text: str, limit: int, suffix: str = "…") -> str:
-    """Corta por límite de caracteres procurando no partir palabras."""
     if not text or len(text) <= limit:
         return text or ""
     cut = text[:limit]
