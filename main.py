@@ -1,11 +1,3 @@
-"""
-C4A Alerts - Threat Intelligence Pipeline
-Main entry point for the threat intelligence system.
-
-This file serves as the CLI interface and delegates all logic
-to the core orchestrator for better separation of concerns.
-"""
-
 import os
 import sys
 import asyncio

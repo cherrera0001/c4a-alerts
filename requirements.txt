@@ -19,3 +19,4 @@ feedparser==6.0.11
 beautifulsoup4==4.12.2
 supabase>=2.0.0
 psycopg2-binary>=2.9.9
+httpx[http2]==0.27.*
