@@ -5,6 +5,14 @@ from datetime import datetime, timedelta
 from google.cloud import firestore
 from typing import Dict, List, Any, Optional
 import hashlib
+import logging
+
+# Importar collectors
+try:
+    from collectors.misp_csirt import misp_csirt_collector
+except ImportError:
+    misp_csirt_collector = None
+    logging.warning("MISP CSIRT collector no disponible")
 
 # Inicializar Firestore
 db = firestore.Client()
@@ -134,28 +142,38 @@ def collect_alerts(request):
     }
 
     try:
-        # Simular recolección de múltiples fuentes
-        sources = ['cisa', 'nvd', 'mitre', 'virustotal', 'abuseipdb']
         collected_alerts = []
 
-        for source in sources:
-            # Simular alertas de cada fuente
-            alert_data = {
-                'uid': f'alert_{datetime.utcnow().timestamp()}_{source}',
-                'source': source,
-                'title': f'New {source.upper()} Threat Detected',
-                'description': f'Critical vulnerability detected in {source} database',
-                'severity': 'high' if source in ['cisa', 'nvd'] else 'medium',
-                'tags': ['vulnerability', source, 'critical'],
-                'cve_id': f'CVE-2024-{source.upper()}-001',
-                'cvss_score': 8.5 if source in ['cisa', 'nvd'] else 6.0,
-                'epss_score': 0.75 if source in ['cisa', 'nvd'] else 0.45,
-                'confidence': 0.9 if source in ['cisa', 'nvd'] else 0.7,
-                'references': [f'https://{source}.gov/alert/001'],
-                'published_at': datetime.utcnow().isoformat()
-            }
+        # 1. Recolectar desde MISP CSIRT (fuente real)
+        if misp_csirt_collector:
+            try:
+                misp_alerts = misp_csirt_collector.collect_all(days_back=7)
+                collected_alerts.extend(misp_alerts)
+                logging.info(f"Recolectadas {len(misp_alerts)} alertas desde MISP CSIRT")
+            except Exception as e:
+                logging.error(f"Error recolectando desde MISP CSIRT: {e}")
 
-            collected_alerts.append(alert_data)
+        # 2. Simular otras fuentes (para testing)
+        if not collected_alerts:  # Solo si no hay alertas reales
+            sources = ['cisa', 'nvd', 'mitre', 'virustotal', 'abuseipdb']
+
+            for source in sources:
+                # Simular alertas de cada fuente
+                alert_data = {
+                    'uid': f'alert_{datetime.utcnow().timestamp()}_{source}',
+                    'source': source,
+                    'title': f'New {source.upper()} Threat Detected',
+                    'description': f'Critical vulnerability detected in {source} database',
+                    'severity': 'high' if source in ['cisa', 'nvd'] else 'medium',
+                    'tags': ['vulnerability', source, 'critical'],
+                    'cve_id': f'CVE-2024-{source.upper()}-001',
+                    'cvss_score': 8.5 if source in ['cisa', 'nvd'] else 6.0,
+                    'epss_score': 0.75 if source in ['cisa', 'nvd'] else 0.45,
+                    'confidence': 0.9 if source in ['cisa', 'nvd'] else 0.7,
+                    'references': [f'https://{source}.gov/alert/001'],
+                    'published_at': datetime.utcnow().isoformat()
+                }
+                collected_alerts.append(alert_data)
 
         # Procesar cada alerta
         results = []

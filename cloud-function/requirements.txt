@@ -1,5 +1,6 @@
 functions-framework==3.*
 google-cloud-firestore==2.*
+requests==2.*
 fastapi==0.104.1
 pydantic==2.5.0
 celery==5.3.4
