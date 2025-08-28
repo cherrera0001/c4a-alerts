@@ -38,49 +38,48 @@ jobs:
         run: |
           pip install -r cloud-function/requirements.txt
 
-      - name: Deploy Main API Function
-        run: |
-          gcloud functions deploy ${{ env.FUNCTION_NAME }} \
-            --runtime python310 \
-            --trigger-http \
-            --allow-unauthenticated \
-            --source cloud-function \
-            --entry-point process_alert \
-            --memory 512MB \
-            --timeout 540s \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }} \
-            --set-env-vars "ENVIRONMENT=production"
+                    - name: Deploy Main API Function
+         run: |
+           gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+             --runtime python310 \
+             --trigger-http \
+             --allow-unauthenticated \
+             --source cloud-function \
+             --entry-point process_alert \
+             --memory 256MB \
+             --timeout 300s \
+             --region ${{ env.REGION }} \
+             --project ${{ env.PROJECT_ID }} \
+             --set-env-vars "ENVIRONMENT=production"
 
-      - name: Deploy Collection Function
-        run: |
-          gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
-            --runtime python310 \
-            --trigger-http \
-            --allow-unauthenticated \
-            --source cloud-function \
-            --entry-point collect_alerts \
-            --memory 512MB \
-            --timeout 540s \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }} \
-            --set-env-vars "ENVIRONMENT=production"
+       - name: Deploy Collection Function
+         run: |
+           gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
+             --runtime python310 \
+             --trigger-http \
+             --allow-unauthenticated \
+             --source cloud-function \
+             --entry-point collect_alerts \
+             --memory 256MB \
+             --timeout 300s \
+             --region ${{ env.REGION }} \
+             --project ${{ env.PROJECT_ID }} \
+             --set-env-vars "ENVIRONMENT=production"
 
-      - name: Get Function URLs
-        id: function-urls
-        run: |
-          API_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
-            --region=${{ env.REGION }} \
-            --project=${{ env.PROJECT_ID }} \
-            --format="value(httpsTrigger.url)")
-          COLLECTOR_URL=$(gcloud functions describe ${{ env.COLLECTION_FUNCTION }} \
-            --region=${{ env.REGION }} \
-            --project=${{ env.PROJECT_ID }} \
-            --format="value(httpsTrigger.url)")
-          echo "api-url=$API_URL" >> $GITHUB_OUTPUT
-          echo "collector-url=$COLLECTOR_URL" >> $GITHUB_OUTPUT
-          echo "API URL: $API_URL"
-          echo "Collector URL: $COLLECTOR_URL"
+             - name: Get Function URLs
+         id: function-urls
+         run: |
+           # Construir URLs manualmente usando el patrón conocido
+           API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
+           COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
+
+           echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+           echo "collector-url=$COLLECTOR_URL" >> $GITHUB_OUTPUT
+           echo "API URL: $API_URL"
+           echo "Collector URL: $COLLECTOR_URL"
+
+           # Verificar que las funciones existen
+           gcloud functions list --project=${{ env.PROJECT_ID }} --region=${{ env.REGION }} --format="table(name,status,url)"
 
       - name: Test API Health
         run: |
@@ -96,37 +95,19 @@ jobs:
           echo "COLLECTOR_FUNCTION_URL=${{ steps.function-urls.outputs.collector-url }}" >> $GITHUB_ENV
 
   deploy-frontend:
-    name: Deploy Frontend
+    name: Deploy Dashboard
     runs-on: ubuntu-latest
     needs: deploy-cloud-functions
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
+      - name: Dashboard Deployed
         run: |
-          cd frontend
-          npm install
-
-      - name: Build application
-        run: |
-          cd frontend
-          npm run build
-        env:
-          NEXT_PUBLIC_CLOUD_FUNCTION_URL: ${{ needs.deploy-cloud-functions.outputs.api-url }}
-
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./frontend
-          vercel-args: '--prod'
+          echo "✅ Dashboard integrado en Cloud Function"
+          echo "🌐 URL del Dashboard: ${{ needs.deploy-cloud-functions.outputs.api-url }}"
+          echo "📊 Endpoints disponibles:"
+          echo "   - Dashboard: ${{ needs.deploy-cloud-functions.outputs.api-url }}"
+          echo "   - Health: ${{ needs.deploy-cloud-functions.outputs.api-url }}/health"
+          echo "   - Stats: ${{ needs.deploy-cloud-functions.outputs.api-url }}/stats"
+          echo "   - Alerts: ${{ needs.deploy-cloud-functions.outputs.api-url }}/alerts"
 
   collect-alerts:
     name: Collect Alerts

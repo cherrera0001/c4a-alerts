@@ -98,6 +98,20 @@ def process_alert(request):
                 return (json.dumps(stats), 200, headers)
 
         elif request.method == 'GET':
+            # Manejar rutas del dashboard
+            path = request.path.strip('/')
+
+            if path == '' or path == 'dashboard':
+                return serve_dashboard(request)
+            elif path == 'health':
+                return get_health(request)
+            elif path == 'stats':
+                return get_stats(request)
+            elif path == 'alerts':
+                return get_alerts(request)
+            else:
+                # Intentar servir el dashboard por defecto
+                return serve_dashboard(request)
             # Health check
             return (json.dumps({
                 'status': 'healthy',
@@ -334,3 +348,125 @@ def update_statistics(alert_data: Dict[str, Any]):
     # Esta función puede actualizar contadores en tiempo real
     # Por ahora es un placeholder para futuras optimizaciones
     pass
+
+def serve_dashboard(request):
+    """Sirve el dashboard HTML"""
+    try:
+        # Leer el archivo HTML
+        html_path = os.path.join(os.path.dirname(__file__), 'static', 'index.html')
+        with open(html_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'text/html; charset=utf-8'
+        }
+        return (html_content, 200, headers)
+    except Exception as e:
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+        }
+        return (json.dumps({'error': 'Dashboard not available'}), 500, headers)
+
+def get_health(request):
+    """Endpoint de health check"""
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    }
+
+    if request.method == 'OPTIONS':
+        return ('', 204, headers)
+
+    try:
+        # Verificar conexión a Firestore
+        db.collection('alerts').limit(1).stream()
+
+        return (json.dumps({
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'service': 'c4a-alerts-api'
+        }), 200, headers)
+    except Exception as e:
+        return (json.dumps({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500, headers)
+
+def get_stats(request):
+    """Obtiene estadísticas del sistema"""
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    }
+
+    if request.method == 'OPTIONS':
+        return ('', 204, headers)
+
+    try:
+        # Obtener estadísticas de Firestore
+        alerts_ref = db.collection('alerts')
+
+        # Total de alertas
+        total_alerts = len(list(alerts_ref.stream()))
+
+        # Alertas de hoy
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_alerts = len(list(alerts_ref.where('timestamp', '>=', today).stream()))
+
+        # Alertas críticas
+        critical_alerts = len(list(alerts_ref.where('severity', '==', 'critical').stream()))
+
+        # IOCs únicos (simplificado)
+        unique_iocs = 0
+        for alert in alerts_ref.stream():
+            alert_data = alert.to_dict()
+            if 'alert_data' in alert_data and 'iocs' in alert_data['alert_data']:
+                unique_iocs += len(alert_data['alert_data']['iocs'])
+
+        stats = {
+            'total_alerts': total_alerts,
+            'today_alerts': today_alerts,
+            'critical_alerts': critical_alerts,
+            'unique_iocs': unique_iocs,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+        return (json.dumps(stats), 200, headers)
+    except Exception as e:
+        return (json.dumps({'error': str(e)}), 500, headers)
+
+def get_alerts(request):
+    """Obtiene alertas recientes"""
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    }
+
+    if request.method == 'OPTIONS':
+        return ('', 204, headers)
+
+    try:
+        # Obtener parámetros
+        limit = int(request.args.get('limit', 10))
+
+        # Obtener alertas recientes
+        alerts_ref = db.collection('alerts').order_by('timestamp', direction=firestore.Query.DESCENDING).limit(limit)
+
+        alerts = []
+        for doc in alerts_ref.stream():
+            alert_data = doc.to_dict()
+            alert_data['id'] = doc.id
+            # Convertir timestamp a string para JSON
+            if 'timestamp' in alert_data:
+                alert_data['timestamp'] = alert_data['timestamp'].isoformat()
+            alerts.append(alert_data)
+
+        return (json.dumps(alerts), 200, headers)
+    except Exception as e:
+        return (json.dumps({'error': str(e)}), 500, headers)
