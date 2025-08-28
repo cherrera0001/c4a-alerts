@@ -1,76 +1,252 @@
-# 🔐 C4A CVE & PoC Alerts — v3.2.1 (2025-05-05)
+# C4A Alerts - Modular Threat Intelligence & Alerting Platform
 
-Sistema automatizado de monitoreo de vulnerabilidades y exploits, con envío de alertas enriquecidas por Telegram y sincronización en tiempo real con Google Sheets para dashboards personalizados en Looker Studio. Ejecutado completamente desde GitHub Actions, sin necesidad de servidores propios.
+[![CI/CD Pipeline](https://github.com/cherrera0001/c4a-alerts/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/cherrera0001/c4a-alerts/actions/workflows/ci-cd.yml)
+[![Alert Collection](https://github.com/cherrera0001/c4a-alerts/actions/workflows/alerts.yml/badge.svg)](https://github.com/cherrera0001/c4a-alerts/actions/workflows/alerts.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
+A scalable, modular SaaS platform for collecting, processing, and distributing security alerts and threat intelligence.
 
-# 🛡️ C4A Alerts
+## 🚀 Features
 
-Sistema modular de alerta temprana para amenazas, CVEs, PoCs y noticias de seguridad, automatizado con arquitectura **serverless** y compatible con visualización avanzada vía Google Looker Studio.
+- **Modular Architecture**: Plugin-based pipeline with clear separation of concerns
+- **Multiple Input Sources**: Support for various threat intelligence feeds
+- **Intelligent Processing**: Deduplication, prioritization, and routing
+- **Multi-Channel Notifications**: Telegram, Slack, Email, Webhooks
+- **CTI Platform Integration**: OpenCTI, MISP, TheHive
+- **RESTful API**: FastAPI-based API with comprehensive documentation
+- **Asynchronous Processing**: Celery workers for scalable alert processing
+- **Security First**: OWASP ASVS/Top10 compliance, HMAC webhooks, API keys
 
-## 📁 Estructura del Proyecto
+## 🏗️ Architecture
 
-| Ruta                                    | Descripción                                               |
-|-----------------------------------------|-----------------------------------------------------------|
-| `src/collector.py`                      | Recolector de CVEs y PoCs                                 |
-| `src/notifier.py`                       | Envío de mensajes a Telegram                              |
-| `src/sync_to_looker.py`                | 🆕 Sincronización con Google Sheets                       |
-| `src/secure_storage.py`                 | Historial cifrado en GitHub Gist                          |
-| `src/utils.py`                          | Funciones comunes y validaciones                          |
-| `src/sources/`                          | Múltiples fuentes (CISA, Reddit, GitHub, CERT, etc.)      |
-| `.github/workflows/telegram-alert.yml` | Envío de alertas cada 2 horas                             |
-| `.github/workflows/code_quality.yml`   | Análisis de seguridad con Bandit y estilo con Flake8      |
-| `.github/workflows/sonarcloud-analysis.yml` | Análisis de código con SonarCloud                    |
-| `main.py`                               | Script principal de ejecución                             |
-| `monitor_cert_health.py`               | Verificación de salud de feeds RSS                        |
-| `requirements.txt`                     | Dependencias necesarias                                   |
-| `README.md`                             | Documentación principal                                   |
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  Collectors │───▶│ Normalizer  │───▶│ Enricher    │───▶│ Deduplicator│
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                                              │
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐        ▼
+│  Router     │◀───│ Prioritizer │◀───│ Enricher    │◀─────────────┘
+└─────────────┘    └─────────────┘    └─────────────┘
+       │
+       ▼
+┌─────────────┐
+│ Notifiers   │───▶ Telegram, Slack, Email, Webhooks, CTI Platforms
+└─────────────┘
+```
 
----
+## 📦 Installation
 
-## ✨ Características Nuevas en `v3.2.1`
+### Prerequisites
 
-| Característica                                               | Descripción breve                                                                                      |
-|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| ✅ Workload Identity Federation (WIF)                        | Autenticación segura en GCP sin claves estáticas                                                       |
-| ✅ Sincronización con Google Sheets                          | Registro automático de alertas en hoja compartida para dashboards Looker                               |
-| ✅ Historial cifrado (AES-256-GCM)                           | Persistencia segura y prevención de duplicados                                                         |
-| ✅ Modularidad avanzada                                       | Nueva estructura `src/sources/` para integrar más fuentes fácilmente                                    |
+- Python 3.10+
+- PostgreSQL 15+
+- Redis 7+
+- Docker & Docker Compose (optional)
 
----
+### Quick Start
 
-## 🔐 Autenticación GCP (WIF)
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/cherrera0001/c4a-alerts.git
+   cd c4a-alerts
+   ```
 
-Desde `v3.2.0`, el sistema utiliza **Workload Identity Federation (OIDC)** para autenticarse en GCP sin necesidad de archivos `.json` ni claves estáticas.
+2. **Install dependencies**
+   ```bash
+   pip install -e .
+   ```
 
-### ✅ Secrets requeridos
+3. **Set up environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
-| Nombre | Uso |
-|--------|-----|
-| `WIF_PROVIDER` | Workload Identity Provider (`projects/.../providers/github`) |
-| `WIF_SERVICE_ACCOUNT` | Email del service account federado (`...@project.iam.gserviceaccount.com`) |
-| `LOOKER_SHEET_ID` | ID de la Google Sheet de destino |
-| `TELEGRAM_TOKEN` / `CHAT_ID` | Bot de Telegram |
-| `ENCRYPTION_KEY` | Cifrado de historial local |
-| `GIST_TOKEN` / `GIST_ID` | Persistencia cifrada en GitHub Gist |
-| `GHSA_TOKEN`, `REDDIT_*` | Acceso a fuentes externas |
+4. **Run with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
 
----
+## 🔧 Configuration
 
-## 📊 Visualización en Looker Studio
+### Environment Variables
 
-- El script `sync_to_looker.py` inserta automáticamente las alertas en una **Google Sheet compartida**.
-- Looker Studio (Data Studio) puede conectarse a esta hoja para crear dashboards visuales.
-- Ideal para analistas SOC, equipos de respuesta, y gestión de riesgos.
-
----
-
-## 🧪 Pruebas Locales
+Key configuration options in `.env`:
 
 ```bash
-# Instalar dependencias
-pip install -r requirements.txt
+# Application
+APP_NAME=C4A Alerts
+DEBUG=false
+LOG_LEVEL=INFO
 
-# Ejecutar pruebas
-python -m unittest discover -s test
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/c4a_alerts
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# API
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Security
+SECRET_KEY=your-secret-key
+API_KEY_HEADER=X-API-Key
+
+# Notifiers
+TELEGRAM_BOT_TOKEN=your-telegram-token
+SLACK_BOT_TOKEN=your-slack-token
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+
+# CTI Platforms
+OPENCTI_URL=https://your-opencti-instance
+MISP_URL=https://your-misp-instance
+THEHIVE_URL=https://your-thehive-instance
+```
+
+## 🚀 Usage
+
+### API Endpoints
+
+- **Health Check**: `GET /api/v1/health`
+- **Worker Status**: `GET /api/v1/workers/status`
+- **Trigger Collection**: `POST /api/v1/workers/collect`
+- **Process Alert**: `POST /api/v1/workers/process`
+
+### API Documentation
+
+Once running, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### Manual Alert Collection
+
+```bash
+# Collect from all sources
+curl -X POST "http://localhost:8000/api/v1/workers/collect"
+
+# Collect from specific source
+curl -X POST "http://localhost:8000/api/v1/workers/collect" \
+  -H "Content-Type: application/json" \
+  -d '{"source": "cisa", "force": true}'
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=c4aalerts --cov-report=html
+
+# Run specific test categories
+pytest tests/unit/
+pytest tests/integration/
+```
+
+## 🔒 Security
+
+This project follows security best practices:
+
+- **OWASP ASVS/Top10** compliance
+- **API Key Authentication**
+- **HMAC-signed webhooks**
+- **Input validation** with Pydantic
+- **Rate limiting**
+- **Security headers**
+- **Dependency scanning** with `pip-audit` and `safety`
+
+## 📊 Monitoring
+
+- **Health checks** at `/api/v1/health`
+- **Detailed health** at `/api/v1/health/detailed`
+- **Worker status** at `/api/v1/workers/status`
+- **Metrics** via Prometheus endpoints (planned)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run code quality checks
+ruff check c4aalerts/ tests/
+black c4aalerts/ tests/
+isort c4aalerts/ tests/
+mypy c4aalerts/
+
+# Run security checks
+bandit -r c4aalerts/
+pip-audit
+```
+
+## 📋 Roadmap
+
+### PR#4 - Enhanced Deduplication & Prioritization
+- [ ] YAML-based routing rules
+- [ ] Advanced deduplication algorithms
+- [ ] Machine learning prioritization
+- [ ] Historical data analysis
+
+### PR#5 - Notifiers Implementation
+- [ ] Telegram refactoring
+- [ ] Slack integration
+- [ ] Email templates
+- [ ] Webhook support
+
+### PR#6 - CTI Platform Integration
+- [ ] OpenCTI integration
+- [ ] MISP integration
+- [ ] TheHive integration
+- [ ] Documentation and examples
+
+### PR#7 - Security & Hardening
+- [ ] Rate limiting implementation
+- [ ] API key management
+- [ ] HMAC webhook validation
+- [ ] Security headers
+
+### PR#8 - Metrics & Logging
+- [ ] Structured logging
+- [ ] Prometheus metrics
+- [ ] Grafana dashboards
+- [ ] Operations documentation
+
+### PR#9 - Demo UI (Optional)
+- [ ] Minimal web interface
+- [ ] Alert visualization
+- [ ] Configuration management
+- [ ] Demo data
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- FastAPI for the excellent web framework
+- Celery for asynchronous task processing
+- Pydantic for data validation
+- The security community for best practices
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/cherrera0001/c4a-alerts/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/cherrera0001/c4a-alerts/discussions)
+- **Documentation**: [Wiki](https://github.com/cherrera0001/c4a-alerts/wiki)
+
+---
+
+**C4A Alerts** - Making threat intelligence accessible and actionable. 🛡️
 
