@@ -18,6 +18,9 @@ jobs:
   deploy-cloud-functions:
     name: Deploy Cloud Functions
     runs-on: ubuntu-latest
+    outputs:
+      api-url: ${{ steps.function-urls.outputs.api-url }}
+      collector-url: ${{ steps.function-urls.outputs.collector-url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,63 +41,58 @@ jobs:
         run: |
           pip install -r cloud-function/requirements.txt
 
-                    - name: Deploy Main API Function
-         run: |
-           gcloud functions deploy ${{ env.FUNCTION_NAME }} \
-             --runtime python310 \
-             --trigger-http \
-             --allow-unauthenticated \
-             --source cloud-function \
-             --entry-point process_alert \
-             --memory 256MB \
-             --timeout 300s \
-             --region ${{ env.REGION }} \
-             --project ${{ env.PROJECT_ID }} \
-             --set-env-vars "ENVIRONMENT=production"
+      - name: Deploy Main API Function
+        run: |
+          gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+            --runtime python310 \
+            --trigger-http \
+            --allow-unauthenticated \
+            --source cloud-function \
+            --entry-point process_alert \
+            --memory 256MB \
+            --timeout 300s \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --set-env-vars "ENVIRONMENT=production"
 
-       - name: Deploy Collection Function
-         run: |
-           gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
-             --runtime python310 \
-             --trigger-http \
-             --allow-unauthenticated \
-             --source cloud-function \
-             --entry-point collect_alerts \
-             --memory 256MB \
-             --timeout 300s \
-             --region ${{ env.REGION }} \
-             --project ${{ env.PROJECT_ID }} \
-             --set-env-vars "ENVIRONMENT=production"
+      - name: Deploy Collection Function
+        run: |
+          gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
+            --runtime python310 \
+            --trigger-http \
+            --allow-unauthenticated \
+            --source cloud-function \
+            --entry-point collect_alerts \
+            --memory 256MB \
+            --timeout 300s \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --set-env-vars "ENVIRONMENT=production"
 
-             - name: Get Function URLs
-         id: function-urls
-         run: |
-           # Construir URLs manualmente usando el patrón conocido
-           API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
-           COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
+      - name: Get Function URLs
+        id: function-urls
+        run: |
+          # Construir URLs manualmente usando el patrón conocido
+          API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
+          COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
 
-           echo "api-url=$API_URL" >> $GITHUB_OUTPUT
-           echo "collector-url=$COLLECTOR_URL" >> $GITHUB_OUTPUT
-           echo "API URL: $API_URL"
-           echo "Collector URL: $COLLECTOR_URL"
+          echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+          echo "collector-url=$COLLECTOR_URL" >> $GITHUB_OUTPUT
+          echo "API URL: $API_URL"
+          echo "Collector URL: $COLLECTOR_URL"
 
-           # Verificar que las funciones existen
-           gcloud functions list --project=${{ env.PROJECT_ID }} --region=${{ env.REGION }} --format="table(name,status,url)"
+          # Verificar que las funciones existen
+          gcloud functions list --project=${{ env.PROJECT_ID }} --region=${{ env.REGION }} --format="table(name,status,url)"
 
       - name: Test API Health
         run: |
           if [ -n "${{ steps.function-urls.outputs.api-url }}" ]; then
-            curl -f "${{ steps.function-urls.outputs.api-url }}" || echo "Health check failed but continuing..."
+            curl -f "${{ steps.function-urls.outputs.api-url }}/health" || echo "Health check failed but continuing..."
           else
             echo "API URL not available, skipping health check"
           fi
 
-      - name: Update Environment Variables
-        run: |
-          echo "CLOUD_FUNCTION_URL=${{ steps.function-urls.outputs.api-url }}" >> $GITHUB_ENV
-          echo "COLLECTOR_FUNCTION_URL=${{ steps.function-urls.outputs.collector-url }}" >> $GITHUB_ENV
-
-  deploy-frontend:
+  deploy-dashboard:
     name: Deploy Dashboard
     runs-on: ubuntu-latest
     needs: deploy-cloud-functions
@@ -129,21 +127,30 @@ jobs:
   notify-deployment:
     name: Notify Deployment
     runs-on: ubuntu-latest
-    needs: [deploy-cloud-functions, deploy-frontend]
+    needs: [deploy-cloud-functions, deploy-dashboard]
     if: always()
     steps:
       - name: Deployment Summary
         run: |
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ✅ Cloud Functions Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Cloud Functions Deployed (Cost Optimized)" >> $GITHUB_STEP_SUMMARY
           echo "- **API Function**: ${{ needs.deploy-cloud-functions.outputs.api-url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Collector Function**: ${{ needs.deploy-cloud-functions.outputs.collector-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Memory**: 256MB (optimized from 512MB)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timeout**: 300s (optimized from 540s)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🌐 Frontend Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dashboard**: Available at Vercel deployment" >> $GITHUB_STEP_SUMMARY
+          echo "### 🌐 Dashboard Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard**: ${{ needs.deploy-cloud-functions.outputs.api-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health Check**: ${{ needs.deploy-cloud-functions.outputs.api-url }}/health" >> $GITHUB_STEP_SUMMARY
+          echo "- **Statistics**: ${{ needs.deploy-cloud-functions.outputs.api-url }}/stats" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 💰 Cost Optimization" >> $GITHUB_STEP_SUMMARY
+          echo "- **Free Tier**: $300 USD for 12 months" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cloud Functions**: 2M invocations/month free" >> $GITHUB_STEP_SUMMARY
+          echo "- **Firestore**: 1GB storage + 50K reads/day free" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Configure GitHub Secrets for production" >> $GITHUB_STEP_SUMMARY
+          echo "1. Test the complete platform" >> $GITHUB_STEP_SUMMARY
           echo "2. Set up monitoring and alerting" >> $GITHUB_STEP_SUMMARY
-          echo "3. Test the complete platform" >> $GITHUB_STEP_SUMMARY
+          echo "3. Configure OpenCTI integration" >> $GITHUB_STEP_SUMMARY
