@@ -9,7 +9,7 @@ on:
     - cron: '0 */6 * * *'
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: c4a-alerts-personal-1756352164  # Project ID directo mientras verificamos el secret
   FUNCTION_NAME: c4a-alerts-api
   COLLECTION_FUNCTION: c4a-alerts-collector
   REGION: us-central1
@@ -75,7 +75,7 @@ jobs:
           echo "📊 Debug - PROJECT_ID: '${{ env.PROJECT_ID }}'"
           echo "📊 Debug - FUNCTION_NAME: '${{ env.FUNCTION_NAME }}'"
           echo "📊 Debug - COLLECTION_FUNCTION: '${{ env.COLLECTION_FUNCTION }}'"
-          
+
           # Construir URLs para verificación
           API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
           COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
