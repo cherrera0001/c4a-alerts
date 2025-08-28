@@ -120,12 +120,6 @@ def process_alert(request):
             else:
                 # Intentar servir el dashboard por defecto
                 return serve_dashboard(request)
-            # Health check
-            return (json.dumps({
-                'status': 'healthy',
-                'timestamp': datetime.utcnow().isoformat(),
-                'version': '2.0.0'
-            }), 200, headers)
 
         return (json.dumps({'error': 'Invalid request'}), 400, headers)
 
