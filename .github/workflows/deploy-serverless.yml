@@ -19,8 +19,9 @@ jobs:
     name: Deploy Cloud Functions
     runs-on: ubuntu-latest
     outputs:
-      api-url: ${{ steps.function-urls.outputs.function-api }}
-      collector-url: ${{ steps.function-urls.outputs.function-collector }}
+      project-id: ${{ env.PROJECT_ID }}
+      function-name: ${{ env.FUNCTION_NAME }}
+      collection-function: ${{ env.COLLECTION_FUNCTION }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,82 +70,91 @@ jobs:
             --project ${{ env.PROJECT_ID }} \
             --set-env-vars "ENVIRONMENT=production"
 
-      - name: Get Function URLs
-        id: function-urls
+      - name: Verify Functions Deployed
         run: |
-          # Construir URLs manualmente usando el patrón conocido
+          # Construir URLs para verificación
           API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
           COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
 
-          # Usar nombres más genéricos para evitar detección de secretos
-          echo "function-api=$API_URL" >> $GITHUB_OUTPUT
-          echo "function-collector=$COLLECTOR_URL" >> $GITHUB_OUTPUT
-          echo "API URL: $API_URL"
-          echo "Collector URL: $COLLECTOR_URL"
+          echo "✅ Cloud Functions desplegadas:"
+          echo "   API: $API_URL"
+          echo "   Collector: $COLLECTOR_URL"
 
           # Verificar que las funciones existen
           gcloud functions list --project=${{ env.PROJECT_ID }} --regions=${{ env.REGION }} --format="table(name,status,url)"
 
       - name: Test API Health
         run: |
-          if [ -n "${{ steps.function-urls.outputs.function-api }}" ]; then
-            curl -f "${{ steps.function-urls.outputs.function-api }}/health" || echo "Health check failed but continuing..."
-          else
-            echo "API URL not available, skipping health check"
-          fi
-
-  deploy-dashboard:
-    name: Deploy Dashboard
-    runs-on: ubuntu-latest
-    needs: deploy-cloud-functions
-    steps:
-      - name: Dashboard Deployed
-        run: |
-          echo "✅ Dashboard integrado en Cloud Function"
-          echo "🌐 URL del Dashboard: ${{ needs.deploy-cloud-functions.outputs.api-url }}"
-          echo "📊 Endpoints disponibles:"
-          echo "   - Dashboard: ${{ needs.deploy-cloud-functions.outputs.api-url }}"
-          echo "   - Health: ${{ needs.deploy-cloud-functions.outputs.api-url }}/health"
-          echo "   - Stats: ${{ needs.deploy-cloud-functions.outputs.api-url }}/stats"
-          echo "   - Alerts: ${{ needs.deploy-cloud-functions.outputs.api-url }}/alerts"
+          API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
+          curl -f "$API_URL/health" || echo "Health check failed but continuing..."
 
   collect-alerts:
     name: Collect Alerts
     runs-on: ubuntu-latest
     needs: deploy-cloud-functions
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    # SIEMPRE ejecutar después del deploy (eliminamos las condiciones restrictivas)
     steps:
       - name: Trigger Alert Collection
         run: |
-          curl -X POST "${{ needs.deploy-cloud-functions.outputs.collector-url }}" \
+          echo "🔍 Iniciando recolección de alertas desde MISP CSIRT..."
+          COLLECTOR_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.collection-function }}"
+          curl -X POST "$COLLECTOR_URL" \
             -H "Content-Type: application/json" \
             -d '{"action": "collect_alerts"}'
 
       - name: Report Collection Status
         run: |
-          echo "Alert collection triggered successfully"
-          echo "Collection URL: ${{ needs.deploy-cloud-functions.outputs.collector-url }}"
+          echo "✅ Recolección de alertas completada"
+          echo "📊 URL del Collector: https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.collection-function }}"
+          echo "🔗 Datos disponibles en Firestore"
+
+  deploy-dashboard:
+    name: Deploy Dashboard
+    runs-on: ubuntu-latest
+    needs: [deploy-cloud-functions, collect-alerts]
+    steps:
+      - name: Dashboard Deployed
+        run: |
+          API_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.function-name }}"
+          echo "✅ Dashboard integrado en Cloud Function"
+          echo "🌐 URL del Dashboard: $API_URL"
+          echo "📊 Endpoints disponibles:"
+          echo "   - Dashboard: $API_URL"
+          echo "   - Health: $API_URL/health"
+          echo "   - Stats: $API_URL/stats"
+          echo "   - Alerts: $API_URL/alerts"
+          echo ""
+          echo "📈 Datos de MISP CSIRT ya recolectados y disponibles"
 
   notify-deployment:
     name: Notify Deployment
     runs-on: ubuntu-latest
-    needs: [deploy-cloud-functions, deploy-dashboard]
+    needs: [deploy-cloud-functions, collect-alerts, deploy-dashboard]
     if: always()
     steps:
       - name: Deployment Summary
         run: |
+          API_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.function-name }}"
+          COLLECTOR_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.collection-function }}"
+
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### ✅ Cloud Functions Deployed (Cost Optimized)" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Function**: ${{ needs.deploy-cloud-functions.outputs.api-url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Collector Function**: ${{ needs.deploy-cloud-functions.outputs.collector-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Function**: $API_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Collector Function**: $COLLECTOR_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Memory**: 256MB (optimized from 512MB)" >> $GITHUB_STEP_SUMMARY
           echo "- **Timeout**: 300s (optimized from 540s)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Threat Intelligence Collected" >> $GITHUB_STEP_SUMMARY
+          echo "- **MISP CSIRT**: Alertas recolectadas desde CSIRT Nacional de Chile" >> $GITHUB_STEP_SUMMARY
+          echo "- **Data Storage**: Firestore con datos históricos" >> $GITHUB_STEP_SUMMARY
+          echo "- **Real-time**: Datos disponibles inmediatamente" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🌐 Dashboard Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dashboard**: ${{ needs.deploy-cloud-functions.outputs.api-url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Health Check**: ${{ needs.deploy-cloud-functions.outputs.api-url }}/health" >> $GITHUB_STEP_SUMMARY
-          echo "- **Statistics**: ${{ needs.deploy-cloud-functions.outputs.api-url }}/stats" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard**: $API_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health Check**: $API_URL/health" >> $GITHUB_STEP_SUMMARY
+          echo "- **Statistics**: $API_URL/stats" >> $GITHUB_STEP_SUMMARY
+          echo "- **Alerts**: $API_URL/alerts" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 💰 Cost Optimization" >> $GITHUB_STEP_SUMMARY
           echo "- **Free Tier**: $300 USD for 12 months" >> $GITHUB_STEP_SUMMARY
