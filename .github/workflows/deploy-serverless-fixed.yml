@@ -42,33 +42,33 @@ jobs:
         run: |
           pip install -r cloud-function/requirements.txt
 
-       - name: Deploy Main API Function
-         run: |
-           gcloud functions deploy ${{ env.FUNCTION_NAME }} \
-             --runtime python310 \
-             --trigger-http \
-             --allow-unauthenticated \
-             --source cloud-function \
-             --entry-point process_alert \
-             --memory 256MB \
-             --timeout 300s \
-             --region ${{ env.REGION }} \
-             --project ${{ env.PROJECT_ID }} \
-             --set-env-vars "ENVIRONMENT=production,ANCI_USERNAME=crherrera@c4a.cl,ANCI_PASSWORD=${{ secrets.ANCI_PASSWORD }}"
+      - name: Deploy Main API Function
+        run: |
+          gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+            --runtime python310 \
+            --trigger-http \
+            --allow-unauthenticated \
+            --source cloud-function \
+            --entry-point process_alert \
+            --memory 256MB \
+            --timeout 300s \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --set-env-vars "ENVIRONMENT=production,ANCI_USERNAME=crherrera@c4a.cl,ANCI_PASSWORD=${{ secrets.ANCI_PASSWORD }}"
 
-       - name: Deploy Collection Function
-         run: |
-           gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
-             --runtime python310 \
-             --trigger-http \
-             --allow-unauthenticated \
-             --source cloud-function \
-             --entry-point collect_alerts \
-             --memory 256MB \
-             --timeout 300s \
-             --region ${{ env.REGION }} \
-             --project ${{ env.PROJECT_ID }} \
-             --set-env-vars "ENVIRONMENT=production,ANCI_USERNAME=crherrera@c4a.cl,ANCI_PASSWORD=${{ secrets.ANCI_PASSWORD }}"
+      - name: Deploy Collection Function
+        run: |
+          gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
+            --runtime python310 \
+            --trigger-http \
+            --allow-unauthenticated \
+            --source cloud-function \
+            --entry-point collect_alerts \
+            --memory 256MB \
+            --timeout 300s \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --set-env-vars "ENVIRONMENT=production,ANCI_USERNAME=crherrera@c4a.cl,ANCI_PASSWORD=${{ secrets.ANCI_PASSWORD }}"
 
       - name: Verify Functions Deployed
         run: |
@@ -96,7 +96,6 @@ jobs:
     name: Collect Alerts
     runs-on: ubuntu-latest
     needs: deploy-cloud-functions
-    # SIEMPRE ejecutar después del deploy (eliminamos las condiciones restrictivas)
     steps:
       - name: Trigger Alert Collection
         run: |
