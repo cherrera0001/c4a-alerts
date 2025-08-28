@@ -47,6 +47,26 @@
             font-size: 1.1em;
         }
 
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background-color: #27ae60;
+        }
+
+        .status-offline {
+            background-color: #e74c3c;
+        }
+
+        .status-warning {
+            background-color: #f39c12;
+        }
+
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -410,6 +430,76 @@
             }
         }
 
+        async function checkSystemStatus() {
+            try {
+                // Verificar estado de la API
+                const healthResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.health}`);
+                const healthStatus = healthResponse.ok ? 'online' : 'offline';
+
+                // Verificar estadísticas
+                const statsResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.stats}`);
+                const stats = statsResponse.ok ? await statsResponse.json() : {};
+
+                // Verificar alertas recientes
+                const alertsResponse = await fetch(`${API_BASE_URL}${API_ENDPOINTS.alerts}?limit=5`);
+                const alerts = alertsResponse.ok ? await alertsResponse.json() : [];
+
+                // Actualizar indicadores de estado
+                updateSystemStatus({
+                    api: healthStatus,
+                    firestore: stats.firestore_status || 'online',
+                    misp_csirt: stats.misp_csirt_status || 'online',
+                    last_collection: stats.last_collection || 'Reciente'
+                });
+
+                return {
+                    api: healthStatus,
+                    firestore: stats.firestore_status || 'online',
+                    misp_csirt: stats.misp_csirt_status || 'online',
+                    total_alerts: stats.total_alerts || 0,
+                    recent_alerts: alerts.length || 0
+                };
+            } catch (error) {
+                console.error('Error checking system status:', error);
+                updateSystemStatus({
+                    api: 'offline',
+                    firestore: 'offline',
+                    misp_csirt: 'offline',
+                    last_collection: 'Desconocido'
+                });
+                return null;
+            }
+        }
+
+        function updateSystemStatus(status) {
+            // Actualizar indicadores de estado en el dashboard
+            const statusElements = {
+                api: document.getElementById('apiStatus'),
+                firestore: document.getElementById('firestoreStatus'),
+                misp_csirt: document.getElementById('mispStatus'),
+                last_collection: document.getElementById('lastCollection')
+            };
+
+            if (statusElements.api) {
+                statusElements.api.className = `status-indicator status-${status.api}`;
+                statusElements.api.title = `API: ${status.api === 'online' ? 'Operativo' : 'No disponible'}`;
+            }
+
+            if (statusElements.firestore) {
+                statusElements.firestore.className = `status-indicator status-${status.firestore}`;
+                statusElements.firestore.title = `Firestore: ${status.firestore === 'online' ? 'Conectado' : 'No conectado'}`;
+            }
+
+            if (statusElements.misp_csirt) {
+                statusElements.misp_csirt.className = `status-indicator status-${status.misp_csirt}`;
+                statusElements.misp_csirt.title = `MISP CSIRT: ${status.misp_csirt === 'online' ? 'Conectado' : 'No conectado'}`;
+            }
+
+            if (statusElements.last_collection) {
+                statusElements.last_collection.textContent = status.last_collection;
+            }
+        }
+
         async function loadDashboardData() {
             if (!isOnline) {
                 await checkAPIHealth();
@@ -550,14 +640,17 @@
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function () {
-            // Verificar estado inicial
-            checkAPIHealth();
+            // Verificar estado inicial del sistema
+            checkSystemStatus();
 
             // Cargar datos del dashboard
             loadDashboardData();
 
             // Actualizar cada 30 segundos
-            setInterval(loadDashboardData, 30000);
+            setInterval(() => {
+                checkSystemStatus();
+                loadDashboardData();
+            }, 30000);
         });
     </script>
 </body>

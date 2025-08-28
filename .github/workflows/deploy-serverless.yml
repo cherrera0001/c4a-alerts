@@ -101,10 +101,15 @@ jobs:
       - name: Trigger Alert Collection
         run: |
           echo "🔍 Iniciando recolección de alertas desde MISP CSIRT..."
-          echo "📊 Debug - Project ID: '${{ needs.deploy-cloud-functions.outputs.project-id }}'"
-          echo "📊 Debug - Collection Function: '${{ needs.deploy-cloud-functions.outputs.collection-function }}'"
 
-          COLLECTOR_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.collection-function }}"
+          # Usar variables de entorno directamente
+          PROJECT_ID="c4a-alerts-personal-1756352164"
+          COLLECTION_FUNCTION="c4a-alerts-collector"
+
+          echo "📊 Debug - Project ID: '$PROJECT_ID'"
+          echo "📊 Debug - Collection Function: '$COLLECTION_FUNCTION'"
+
+          COLLECTOR_URL="https://us-central1-$PROJECT_ID.cloudfunctions.net/$COLLECTION_FUNCTION"
           echo "📊 Debug - Collector URL: '$COLLECTOR_URL'"
 
           curl -X POST "$COLLECTOR_URL" \
@@ -124,7 +129,9 @@ jobs:
     steps:
       - name: Dashboard Deployed
         run: |
-          API_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.function-name }}"
+          PROJECT_ID="c4a-alerts-personal-1756352164"
+          FUNCTION_NAME="c4a-alerts-api"
+          API_URL="https://us-central1-$PROJECT_ID.cloudfunctions.net/$FUNCTION_NAME"
           echo "✅ Dashboard integrado en Cloud Function"
           echo "🌐 URL del Dashboard: $API_URL"
           echo "📊 Endpoints disponibles:"
@@ -143,8 +150,11 @@ jobs:
     steps:
       - name: Deployment Summary
         run: |
-          API_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.function-name }}"
-          COLLECTOR_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.collection-function }}"
+          PROJECT_ID="c4a-alerts-personal-1756352164"
+          FUNCTION_NAME="c4a-alerts-api"
+          COLLECTION_FUNCTION="c4a-alerts-collector"
+          API_URL="https://us-central1-$PROJECT_ID.cloudfunctions.net/$FUNCTION_NAME"
+          COLLECTOR_URL="https://us-central1-$PROJECT_ID.cloudfunctions.net/$COLLECTION_FUNCTION"
 
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
