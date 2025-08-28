@@ -20,16 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
+
       - name: Install dependencies
         run: |
           pip install -r cloud-function/requirements.txt
-      
+
       - name: Deploy Main API Function
         run: |
           gcloud functions deploy ${{ env.FUNCTION_NAME }} \
@@ -43,7 +51,7 @@ jobs:
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
             --set-env-vars "ENVIRONMENT=production"
-      
+
       - name: Deploy Collection Function
         run: |
           gcloud functions deploy ${{ env.COLLECTION_FUNCTION }} \
@@ -57,7 +65,7 @@ jobs:
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
             --set-env-vars "ENVIRONMENT=production"
-      
+
       - name: Get Function URLs
         id: function-urls
         run: |
@@ -71,11 +79,11 @@ jobs:
             --format="value(httpsTrigger.url)")
           echo "api-url=$API_URL" >> $GITHUB_OUTPUT
           echo "collector-url=$COLLECTOR_URL" >> $GITHUB_OUTPUT
-      
+
       - name: Test API Health
         run: |
           curl -f "${{ steps.function-urls.outputs.api-url }}" || exit 1
-      
+
       - name: Update Environment Variables
         run: |
           echo "CLOUD_FUNCTION_URL=${{ steps.function-urls.outputs.api-url }}" >> $GITHUB_ENV
@@ -87,24 +95,24 @@ jobs:
     needs: deploy-cloud-functions
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      
+
       - name: Install dependencies
         run: |
           cd frontend
           npm install
-      
+
       - name: Build application
         run: |
           cd frontend
           npm run build
         env:
           NEXT_PUBLIC_CLOUD_FUNCTION_URL: ${{ needs.deploy-cloud-functions.outputs.api-url }}
-      
+
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
@@ -125,7 +133,7 @@ jobs:
           curl -X POST "${{ needs.deploy-cloud-functions.outputs.collector-url }}" \
             -H "Content-Type: application/json" \
             -d '{"action": "collect_alerts"}'
-      
+
       - name: Report Collection Status
         run: |
           echo "Alert collection triggered successfully"
