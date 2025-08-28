@@ -15,8 +15,8 @@ class TelegramNotifier:
     """Notificador para enviar alertas a Telegram"""
 
     def __init__(self):
-        self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN', '')
-        self.chat_id = os.getenv('TELEGRAM_CHAT_ID', '')
+        self.bot_token = os.getenv('TELEGRAM_TOKEN', '')  # Usar el nombre correcto del secret
+        self.chat_id = os.getenv('CHAT_ID', '')  # Usar el nombre correcto del secret
         self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
 
     def is_configured(self) -> bool:
