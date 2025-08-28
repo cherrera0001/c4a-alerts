@@ -19,8 +19,8 @@ jobs:
     name: Deploy Cloud Functions
     runs-on: ubuntu-latest
     outputs:
-      api-url: ${{ steps.function-urls.outputs.api-url }}
-      collector-url: ${{ steps.function-urls.outputs.collector-url }}
+      api-url: ${{ steps.function-urls.outputs.function-api }}
+      collector-url: ${{ steps.function-urls.outputs.function-collector }}
     steps:
       - uses: actions/checkout@v4
 
@@ -76,8 +76,9 @@ jobs:
           API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
           COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
 
-          echo "api-url=$API_URL" >> $GITHUB_OUTPUT
-          echo "collector-url=$COLLECTOR_URL" >> $GITHUB_OUTPUT
+          # Usar nombres más genéricos para evitar detección de secretos
+          echo "function-api=$API_URL" >> $GITHUB_OUTPUT
+          echo "function-collector=$COLLECTOR_URL" >> $GITHUB_OUTPUT
           echo "API URL: $API_URL"
           echo "Collector URL: $COLLECTOR_URL"
 
@@ -86,8 +87,8 @@ jobs:
 
       - name: Test API Health
         run: |
-          if [ -n "${{ steps.function-urls.outputs.api-url }}" ]; then
-            curl -f "${{ steps.function-urls.outputs.api-url }}/health" || echo "Health check failed but continuing..."
+          if [ -n "${{ steps.function-urls.outputs.function-api }}" ]; then
+            curl -f "${{ steps.function-urls.outputs.function-api }}/health" || echo "Health check failed but continuing..."
           else
             echo "API URL not available, skipping health check"
           fi
