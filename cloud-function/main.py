@@ -14,6 +14,13 @@ except ImportError:
     misp_csirt_collector = None
     logging.warning("MISP CSIRT collector no disponible")
 
+# Importar notificadores
+try:
+    from notifiers.telegram_notifier import telegram_notifier
+except ImportError:
+    telegram_notifier = None
+    logging.warning("Telegram notifier no disponible")
+
 # Inicializar Firestore
 db = firestore.Client()
 
@@ -80,10 +87,14 @@ def process_alert(request):
                 # Actualizar estadísticas
                 update_statistics(enriched_alert)
 
+                # Enviar notificaciones
+                notification_results = send_notifications(enriched_alert)
+
                 return (json.dumps({
                     'status': 'success',
                     'alert_id': alert_ref.id,
-                    'priority_score': calculate_priority(enriched_alert)
+                    'priority_score': calculate_priority(enriched_alert),
+                    'notifications': notification_results
                 }), 200, headers)
 
             # Obtener alertas con filtros
@@ -360,6 +371,33 @@ def update_statistics(alert_data: Dict[str, Any]):
     # Esta función puede actualizar contadores en tiempo real
     # Por ahora es un placeholder para futuras optimizaciones
     pass
+
+def send_notifications(alert_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Enviar notificaciones a todos los canales configurados"""
+    results = {}
+
+    # Telegram
+    if telegram_notifier and telegram_notifier.is_configured():
+        try:
+            success = telegram_notifier.send_alert(alert_data)
+            results['telegram'] = {
+                'status': 'success' if success else 'failed',
+                'configured': True
+            }
+        except Exception as e:
+            logging.error(f"Error enviando notificación a Telegram: {e}")
+            results['telegram'] = {
+                'status': 'error',
+                'configured': True,
+                'error': str(e)
+            }
+    else:
+        results['telegram'] = {
+            'status': 'not_configured',
+            'configured': False
+        }
+
+    return results
 
 def serve_dashboard(request):
     """Sirve el dashboard HTML"""

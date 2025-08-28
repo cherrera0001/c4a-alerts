@@ -150,8 +150,20 @@
             transition: background 0.3s ease;
         }
 
+        .alert-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+            transition: background 0.3s ease;
+            cursor: pointer;
+        }
+
         .alert-item:hover {
             background: #ecf0f1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .alert-title {
@@ -163,6 +175,86 @@
         .alert-meta {
             font-size: 0.9em;
             color: #7f8c8d;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .alert-details {
+            margin-top: 20px;
+        }
+
+        .detail-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .detail-section h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .ioc-item {
+            display: inline-block;
+            background: #e8f4fd;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            border: 1px solid #3498db;
+        }
+
+        .severity-high {
+            border-left-color: #e74c3c;
+        }
+
+        .severity-medium {
+            border-left-color: #f39c12;
+        }
+
+        .severity-low {
+            border-left-color: #27ae60;
+        }
+
+        .severity-critical {
+            border-left-color: #8e44ad;
         }
 
         .controls {
@@ -213,6 +305,16 @@
 
         .btn-warning:hover {
             background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
             transform: translateY(-2px);
         }
 
@@ -303,6 +405,29 @@
             <button class="btn btn-warning" onclick="testAPI()">
                 🧪 Probar API
             </button>
+            <button class="btn btn-info" onclick="testTelegram()">
+                📱 Probar Telegram
+            </button>
+        </div>
+
+        <div class="controls" style="margin-top: 10px;">
+            <select id="severityFilter" onchange="filterAlerts()"
+                style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                <option value="">Todas las severidades</option>
+                <option value="critical">Críticas</option>
+                <option value="high">Altas</option>
+                <option value="medium">Medias</option>
+                <option value="low">Bajas</option>
+            </select>
+            <select id="sourceFilter" onchange="filterAlerts()"
+                style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                <option value="">Todas las fuentes</option>
+                <option value="misp_csirt">MISP CSIRT</option>
+                <option value="cisa">CISA</option>
+                <option value="nvd">NVD</option>
+            </select>
+            <input type="text" id="searchFilter" placeholder="Buscar alertas..." onkeyup="filterAlerts()"
+                style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; width: 200px;">
         </div>
 
         <div class="dashboard">
@@ -392,6 +517,17 @@
                         <div class="stat-label">Slack</div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para detalles de alerta -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Detalles de la Alerta</h2>
+            <div id="modalContent" class="alert-details">
+                <!-- Contenido dinámico -->
             </div>
         </div>
     </div>
@@ -584,6 +720,46 @@
             }
         }
 
+        async function testTelegram() {
+            const testData = {
+                title: "🚨 Alerta de Prueba - C4A Alerts",
+                description: "Esta es una alerta de prueba desde el dashboard para verificar la integración con Telegram",
+                severity: "high",
+                source: "dashboard-test",
+                iocs: [
+                    {
+                        type: "ip",
+                        value: "192.168.1.100"
+                    },
+                    {
+                        type: "domain",
+                        value: "test-malicious.com"
+                    }
+                ],
+                tags: ["test", "telegram", "dashboard"]
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/process_alert`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ alert_data: testData })
+                });
+
+                if (response.ok) {
+                    alert('✅ Alerta enviada a Telegram');
+                    setTimeout(loadDashboardData, 1000);
+                } else {
+                    alert('❌ Error enviando a Telegram');
+                }
+            } catch (error) {
+                console.error('Error testing Telegram:', error);
+                alert('❌ Error de conexión con Telegram');
+            }
+        }
+
         function refreshData() {
             loadDashboardData();
         }
@@ -604,15 +780,25 @@
             document.getElementById('uniqueIOCs').textContent = stats.unique_iocs || 0;
         }
 
+        // Variables globales para filtros
+        let allAlerts = [];
+        let filteredAlerts = [];
+
         function updateRecentAlerts(alerts) {
+            allAlerts = alerts || [];
+            filteredAlerts = [...allAlerts];
+            renderAlerts();
+        }
+
+        function renderAlerts() {
             const container = document.getElementById('recentAlerts');
 
-            if (!alerts || alerts.length === 0) {
-                container.innerHTML = '<div class="loading">No hay alertas recientes</div>';
+            if (!filteredAlerts || filteredAlerts.length === 0) {
+                container.innerHTML = '<div class="loading">No hay alertas que coincidan con los filtros</div>';
                 return;
             }
 
-            container.innerHTML = alerts.map(alert => {
+            container.innerHTML = filteredAlerts.map((alert, index) => {
                 // Extraer datos del alert_data si existe (estructura de Firestore)
                 const alertData = alert.alert_data || alert;
                 const title = alertData.title || 'Sin título';
@@ -621,7 +807,7 @@
                 const timestamp = alert.timestamp || new Date().toISOString();
 
                 return `
-                    <div class="alert-item">
+                    <div class="alert-item severity-${severity}" onclick="showAlertDetails(${index})">
                         <div class="alert-title">${title}</div>
                         <div class="alert-meta">
                             Severidad: ${severity} |
@@ -631,6 +817,104 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function filterAlerts() {
+            const severityFilter = document.getElementById('severityFilter').value;
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+
+            filteredAlerts = allAlerts.filter(alert => {
+                const alertData = alert.alert_data || alert;
+                const title = (alertData.title || '').toLowerCase();
+                const description = (alertData.description || '').toLowerCase();
+                const severity = alertData.severity || alert.severity || '';
+                const source = alertData.source || alert.source || '';
+
+                // Filtro por severidad
+                if (severityFilter && severity !== severityFilter) return false;
+
+                // Filtro por fuente
+                if (sourceFilter && source !== sourceFilter) return false;
+
+                // Filtro por búsqueda
+                if (searchFilter && !title.includes(searchFilter) && !description.includes(searchFilter)) return false;
+
+                return true;
+            });
+
+            renderAlerts();
+        }
+
+        function showAlertDetails(index) {
+            const alert = filteredAlerts[index];
+            const alertData = alert.alert_data || alert;
+
+            document.getElementById('modalTitle').textContent = alertData.title || 'Detalles de la Alerta';
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="detail-section">
+                    <h4>📋 Información General</h4>
+                    <p><strong>Título:</strong> ${alertData.title || 'N/A'}</p>
+                    <p><strong>Descripción:</strong> ${alertData.description || 'N/A'}</p>
+                    <p><strong>Severidad:</strong> <span class="severity-${alertData.severity || 'medium'}">${alertData.severity || 'N/A'}</span></p>
+                    <p><strong>Fuente:</strong> ${alertData.source || 'N/A'}</p>
+                    <p><strong>Fecha:</strong> ${new Date(alert.timestamp).toLocaleString()}</p>
+                    <p><strong>ID:</strong> ${alert.id || 'N/A'}</p>
+                </div>
+
+                <div class="detail-section">
+                    <h4>🎯 IOCs (Indicadores de Compromiso)</h4>
+                    ${alertData.iocs && alertData.iocs.length > 0 ?
+                    alertData.iocs.map(ioc => `<span class="ioc-item">${ioc.type}: ${ioc.value}</span>`).join('') :
+                    '<p>No hay IOCs disponibles</p>'
+                }
+                </div>
+
+                <div class="detail-section">
+                    <h4>🏷️ Tags</h4>
+                    ${alertData.tags && alertData.tags.length > 0 ?
+                    alertData.tags.map(tag => `<span class="ioc-item">${tag}</span>`).join('') :
+                    '<p>No hay tags disponibles</p>'
+                }
+                </div>
+
+                <div class="detail-section">
+                    <h4>📊 Metadata</h4>
+                    <p><strong>Confianza:</strong> ${alertData.confidence || 'N/A'}</p>
+                    <p><strong>Puntuación de Prioridad:</strong> ${alert.priority_score || 'N/A'}</p>
+                    ${alertData.cvss_score ? `<p><strong>CVSS Score:</strong> ${alertData.cvss_score}</p>` : ''}
+                    ${alertData.cve_id ? `<p><strong>CVE ID:</strong> ${alertData.cve_id}</p>` : ''}
+                    ${alertData.threat_actor ? `<p><strong>Actor de Amenaza:</strong> ${alertData.threat_actor}</p>` : ''}
+                </div>
+
+                ${alertData.references && alertData.references.length > 0 ? `
+                <div class="detail-section">
+                    <h4>🔗 Referencias</h4>
+                    ${alertData.references.map(ref => `<p><a href="${ref}" target="_blank">${ref}</a></p>`).join('')}
+                </div>
+                ` : ''}
+
+                <div class="detail-section">
+                    <h4>📄 Datos Crudos</h4>
+                    <pre style="background: #f1f1f1; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(alertData, null, 2)}</pre>
+                </div>
+            `;
+
+            document.getElementById('alertModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('alertModal').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer click fuera de él
+        window.onclick = function (event) {
+            const modal = document.getElementById('alertModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
         }
 
         function updateLastUpdate() {
