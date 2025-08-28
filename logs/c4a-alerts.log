@@ -1,2 +1,0 @@
-2025-08-13 02:44:40 | ERROR    | src.logger:log:73 - {"timestamp": "2025-08-13T02:44:40.257828", "level": "ERROR", "message": "\u274c Missing required environment variables: TELEGRAM_TOKEN, CHAT_ID"}
-2025-08-13 02:44:40 | ERROR    | src.logger:log:73 - {"timestamp": "2025-08-13T02:44:40.258263", "level": "ERROR", "message": "Please check your .env file or environment configuration."}
