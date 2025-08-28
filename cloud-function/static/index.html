@@ -398,7 +398,7 @@
 
     <script>
         // Configuración
-        const API_BASE_URL = window.location.origin;
+        const API_BASE_URL = window.location.origin + window.location.pathname.replace(/\/$/, '');
         const API_ENDPOINTS = {
             health: '/health',
             stats: '/stats',
