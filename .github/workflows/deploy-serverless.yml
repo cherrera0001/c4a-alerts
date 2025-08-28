@@ -72,6 +72,10 @@ jobs:
 
       - name: Verify Functions Deployed
         run: |
+          echo "📊 Debug - PROJECT_ID: '${{ env.PROJECT_ID }}'"
+          echo "📊 Debug - FUNCTION_NAME: '${{ env.FUNCTION_NAME }}'"
+          echo "📊 Debug - COLLECTION_FUNCTION: '${{ env.COLLECTION_FUNCTION }}'"
+          
           # Construir URLs para verificación
           API_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.FUNCTION_NAME }}"
           COLLECTOR_URL="https://us-central1-${{ env.PROJECT_ID }}.cloudfunctions.net/${{ env.COLLECTION_FUNCTION }}"
@@ -97,7 +101,12 @@ jobs:
       - name: Trigger Alert Collection
         run: |
           echo "🔍 Iniciando recolección de alertas desde MISP CSIRT..."
+          echo "📊 Debug - Project ID: '${{ needs.deploy-cloud-functions.outputs.project-id }}'"
+          echo "📊 Debug - Collection Function: '${{ needs.deploy-cloud-functions.outputs.collection-function }}'"
+
           COLLECTOR_URL="https://us-central1-${{ needs.deploy-cloud-functions.outputs.project-id }}.cloudfunctions.net/${{ needs.deploy-cloud-functions.outputs.collection-function }}"
+          echo "📊 Debug - Collector URL: '$COLLECTOR_URL'"
+
           curl -X POST "$COLLECTOR_URL" \
             -H "Content-Type: application/json" \
             -d '{"action": "collect_alerts"}'
