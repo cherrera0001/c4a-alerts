@@ -34,7 +34,7 @@ Write-Host ""
 # 2. Verificar uso de Firestore
 Write-Host "🗄️ Firestore Usage:" -ForegroundColor Green
 try {
-    $firestore = gcloud firestore databases describe --project=$ProjectId --database="(default)" --format="value(name,locationId,type)" 2>$null
+    $firestore = gcloud firestore databases describe --project=$ProjectId --database='(default)' --format="value(name,locationId,type)" 2>$null
     if ($firestore) {
         Write-Host "Firestore Database: $firestore"
     }
