@@ -12,7 +12,13 @@
         "next": "14.0.0",
         "react": "^18",
         "react-dom": "^18",
-        "lucide-react": "^0.294.0"
+        "lucide-react": "^0.294.0",
+        "recharts": "^2.8.0",
+        "framer-motion": "^10.16.4",
+        "react-hot-toast": "^2.4.1",
+        "date-fns": "^2.30.0",
+        "clsx": "^2.0.0",
+        "tailwind-merge": "^2.0.0"
     },
     "devDependencies": {
         "typescript": "^5",
