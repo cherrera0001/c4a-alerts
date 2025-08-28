@@ -3,6 +3,7 @@ Celery queue configuration.
 """
 
 import os
+
 from celery import Celery
 
 # Get Redis URL from environment

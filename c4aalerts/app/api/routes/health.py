@@ -2,8 +2,9 @@
 Health check endpoints.
 """
 
-from fastapi import APIRouter, HTTPException
 from datetime import datetime
+
+from fastapi import APIRouter
 
 router = APIRouter()
 

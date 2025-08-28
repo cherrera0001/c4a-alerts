@@ -2,15 +2,17 @@
 Unit tests for Pydantic schemas.
 """
 
+
 import pytest
-from datetime import datetime
+
 from c4aalerts.app.schemas.alert import (
+    IOC,
+    AlertResponse,
     AlertSeverity,
     IOCType,
-    IOC,
     NormalizedAlert,
-    AlertResponse
 )
+
 
 def test_alert_severity_enum():
     """Test AlertSeverity enum values."""

@@ -2,17 +2,15 @@
 Unit tests for worker functions.
 """
 
-import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime
-from typing import Any, Dict, List
 
-from c4aalerts.app.schemas.alert import AlertSeverity, IOC, IOCType, NormalizedAlert
+from c4aalerts.app.schemas.alert import IOC, AlertSeverity, IOCType, NormalizedAlert
 from c4aalerts.app.workers.jobs import (
-    _normalize_alert,
     _collect_from_sources,
+    _normalize_alert,
     _send_notifications,
 )
+
 
 class TestWorkerJobs:
     """Test worker job functions."""

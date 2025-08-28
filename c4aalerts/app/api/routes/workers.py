@@ -2,16 +2,17 @@
 Worker management endpoints.
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 router = APIRouter()
 
 @router.post("/collect")
 async def collect_alerts(
     background_tasks: BackgroundTasks,
-    source: Optional[str] = None,
+    source: str | None = None,
     force: bool = False
 ):
     """Trigger alert collection from sources."""
@@ -26,7 +27,7 @@ async def collect_alerts(
             "force": force
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @router.get("/status")
 async def get_worker_status():
@@ -41,7 +42,7 @@ async def get_worker_status():
     }
 
 @router.post("/process")
-async def process_alert(alert_data: Dict[str, Any]):
+async def process_alert(alert_data: dict[str, Any]):
     """Process a single alert through the pipeline."""
     try:
         # TODO: Implement actual processing logic
@@ -51,9 +52,9 @@ async def process_alert(alert_data: Dict[str, Any]):
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
-async def _collect_alerts_task(source: Optional[str], force: bool):
+async def _collect_alerts_task(source: str | None, force: bool):
     """Background task for alert collection."""
     # TODO: Implement actual collection logic
     print(f"Collecting alerts from {source or 'all sources'} (force: {force})")

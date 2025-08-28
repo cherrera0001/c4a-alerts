@@ -522,16 +522,25 @@
                 return;
             }
 
-            container.innerHTML = alerts.map(alert => `
-                <div class="alert-item">
-                    <div class="alert-title">${alert.title}</div>
-                    <div class="alert-meta">
-                        Severidad: ${alert.severity} |
-                        Fuente: ${alert.source} |
-                        ${new Date(alert.timestamp).toLocaleString()}
+            container.innerHTML = alerts.map(alert => {
+                // Extraer datos del alert_data si existe (estructura de Firestore)
+                const alertData = alert.alert_data || alert;
+                const title = alertData.title || 'Sin título';
+                const severity = alertData.severity || alert.severity || 'unknown';
+                const source = alertData.source || alert.source || 'unknown';
+                const timestamp = alert.timestamp || new Date().toISOString();
+
+                return `
+                    <div class="alert-item">
+                        <div class="alert-title">${title}</div>
+                        <div class="alert-meta">
+                            Severidad: ${severity} |
+                            Fuente: ${source} |
+                            ${new Date(timestamp).toLocaleString()}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function updateLastUpdate() {

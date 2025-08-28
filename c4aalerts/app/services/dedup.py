@@ -2,17 +2,18 @@
 Deduplication service for alerts.
 """
 
-import hashlib
-from typing import Dict, Any, Set
 from datetime import datetime, timedelta
+from typing import Any
+
 from c4aalerts.app.schemas.alert import NormalizedAlert
+
 
 class DedupService:
     """Service for detecting and handling duplicate alerts."""
 
     def __init__(self):
-        self._seen_hashes: Set[str] = set()
-        self._hash_expiry: Dict[str, datetime] = {}
+        self._seen_hashes: set[str] = set()
+        self._hash_expiry: dict[str, datetime] = {}
         self._expiry_hours = 24  # Hash expires after 24 hours
 
     def is_duplicate(self, alert: NormalizedAlert) -> bool:
@@ -50,7 +51,7 @@ class DedupService:
             self._seen_hashes.discard(hash_val)
             del self._hash_expiry[hash_val]
 
-    def get_hash_stats(self) -> Dict[str, Any]:
+    def get_hash_stats(self) -> dict[str, Any]:
         """Get deduplication statistics."""
         return {
             "total_hashes": len(self._seen_hashes),

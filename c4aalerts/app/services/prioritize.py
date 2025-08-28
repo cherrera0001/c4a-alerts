@@ -2,8 +2,10 @@
 Prioritization service for alerts.
 """
 
-from typing import Dict, Any
-from c4aalerts.app.schemas.alert import NormalizedAlert, AlertSeverity
+from typing import Any
+
+from c4aalerts.app.schemas.alert import AlertSeverity, NormalizedAlert
+
 
 class PrioritizationService:
     """Service for calculating alert priority scores."""
@@ -58,7 +60,7 @@ class PrioritizationService:
         }
         return severity_scores.get(severity, 5.0)
 
-    def get_priority_breakdown(self, alert: NormalizedAlert) -> Dict[str, Any]:
+    def get_priority_breakdown(self, alert: NormalizedAlert) -> dict[str, Any]:
         """Get detailed priority calculation breakdown."""
         severity_score = self._get_severity_score(alert.severity)
 

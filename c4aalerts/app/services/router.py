@@ -2,8 +2,10 @@
 Routing service for alert notifications.
 """
 
-from typing import List, Dict, Any
-from c4aalerts.app.schemas.alert import NormalizedAlert, AlertSeverity
+from typing import Any
+
+from c4aalerts.app.schemas.alert import AlertSeverity, NormalizedAlert
+
 
 class RoutingService:
     """Service for determining notification channels for alerts."""
@@ -27,7 +29,7 @@ class RoutingService:
             "malware": ["email", "slack"]
         }
 
-    def get_target_channels(self, alert: NormalizedAlert) -> List[str]:
+    def get_target_channels(self, alert: NormalizedAlert) -> list[str]:
         """
         Determine target notification channels for an alert.
 
@@ -54,7 +56,7 @@ class RoutingService:
 
         return list(channels)
 
-    def get_routing_breakdown(self, alert: NormalizedAlert) -> Dict[str, Any]:
+    def get_routing_breakdown(self, alert: NormalizedAlert) -> dict[str, Any]:
         """Get detailed routing breakdown."""
         channels = self.get_target_channels(alert)
 
@@ -77,11 +79,11 @@ class RoutingService:
 
         return breakdown
 
-    def add_routing_rule(self, severity: AlertSeverity, channels: List[str]):
+    def add_routing_rule(self, severity: AlertSeverity, channels: list[str]):
         """Add a custom routing rule."""
         self.routing_rules[severity] = channels
 
-    def add_tag_rule(self, tag: str, channels: List[str]):
+    def add_tag_rule(self, tag: str, channels: list[str]):
         """Add a custom tag-based routing rule."""
         self.tag_routing[tag.lower()] = channels
 
