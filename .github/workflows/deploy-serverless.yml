@@ -42,19 +42,19 @@ jobs:
         run: |
           pip install -r cloud-function/requirements.txt
 
-      - name: Deploy Main API Function
-        run: |
-          gcloud functions deploy ${{ env.FUNCTION_NAME }} \
-            --runtime python310 \
-            --trigger-http \
-            --allow-unauthenticated \
-            --source cloud-function \
-            --entry-point process_alert \
-            --memory 256MB \
-            --timeout 300s \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }} \
-            --set-env-vars "ENVIRONMENT=production"
+       - name: Deploy Main API Function
+         run: |
+           gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+             --runtime python310 \
+             --trigger-http \
+             --allow-unauthenticated \
+             --source cloud-function \
+             --entry-point process_alert \
+             --memory 256MB \
+             --timeout 300s \
+             --region ${{ env.REGION }} \
+             --project ${{ env.PROJECT_ID }} \
+             --set-env-vars "ENVIRONMENT=production,ANCI_USERNAME=crherrera@c4a.cl,ANCI_PASSWORD=${{ secrets.ANCI_PASSWORD }}"
 
       - name: Deploy Collection Function
         run: |
