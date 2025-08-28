@@ -82,7 +82,7 @@ jobs:
           echo "Collector URL: $COLLECTOR_URL"
 
           # Verificar que las funciones existen
-          gcloud functions list --project=${{ env.PROJECT_ID }} --region=${{ env.REGION }} --format="table(name,status,url)"
+          gcloud functions list --project=${{ env.PROJECT_ID }} --regions=${{ env.REGION }} --format="table(name,status,url)"
 
       - name: Test API Health
         run: |
