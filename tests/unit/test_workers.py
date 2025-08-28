@@ -35,9 +35,9 @@ class TestWorkerJobs:
             "content_hash": "abc123456",
             "confidence": 0.8,
         }
-        
+
         normalized = _normalize_alert(alert_data)
-        
+
         assert isinstance(normalized, NormalizedAlert)
         assert normalized.uid == "test_alert_123"
         assert normalized.source == "test_source"
@@ -61,10 +61,10 @@ class TestWorkerJobs:
         alert_data = {
             "title": "Minimal Alert",
         }
-        
+
         # Normalize alert
         normalized = _normalize_alert(alert_data)
-        
+
         assert isinstance(normalized, NormalizedAlert)
         assert normalized.title == "Minimal Alert"
         assert normalized.source == "unknown"
@@ -84,13 +84,13 @@ class TestWorkerJobs:
             content_hash="test123456",
             iocs=[IOC(value="192.168.1.1", type=IOCType.IP_ADDRESS)],
         )
-        
+
         channels = ["telegram", "slack", "email"]
         results = _send_notifications(alert, channels)
-        
+
         assert isinstance(results, dict)
         assert len(results) == 3
-        
+
         for channel in channels:
             assert channel in results
             assert results[channel]["status"] == "sent"
@@ -124,18 +124,18 @@ class TestWorkerPipeline:
             "content_hash": "integration123hash456",
             "confidence": 0.95,
         }
-        
+
         # Test normalization
         normalized = _normalize_alert(alert_data)
-        
+
         assert normalized.uid == "integration_test_123"
         assert normalized.severity == AlertSeverity.CRITICAL
         assert normalized.cvss_score == 9.5
-        
+
         # Test notification sending
         channels = ["telegram", "slack", "email", "webhook"]
         notifications = _send_notifications(normalized, channels)
-        
+
         assert len(notifications) == 4
         for channel in channels:
             assert channel in notifications

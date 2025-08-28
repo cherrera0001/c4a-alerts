@@ -65,7 +65,7 @@ def _collect_from_sources(source: str = None) -> List[Dict[str, Any]]:
 def _send_notifications(alert: NormalizedAlert, channels: List[str]) -> Dict[str, Any]:
     """Send notifications to specified channels."""
     results = {}
-    
+
     for channel in channels:
         # TODO: Implement actual notification logic in PR#5
         results[channel] = {
@@ -73,7 +73,7 @@ def _send_notifications(alert: NormalizedAlert, channels: List[str]) -> Dict[str
             "alert_id": alert.uid,
             "timestamp": datetime.utcnow().isoformat()
         }
-    
+
     return results
 
 @celery_app.task(bind=True)
@@ -82,13 +82,13 @@ def process_alert_pipeline(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
     try:
         # Update task state
         self.update_state(state="PROGRESS", meta={"step": "normalizing"})
-        
+
         # Step 1: Normalize alert
         normalized_alert = _normalize_alert(alert_data)
-        
+
         # Update task state
         self.update_state(state="PROGRESS", meta={"step": "deduplicating"})
-        
+
         # Step 2: Check for duplicates
         if dedup_service.is_duplicate(normalized_alert):
             return {
@@ -96,25 +96,25 @@ def process_alert_pipeline(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
                 "alert_id": normalized_alert.uid,
                 "message": "Alert is a duplicate"
             }
-        
+
         # Update task state
         self.update_state(state="PROGRESS", meta={"step": "prioritizing"})
-        
+
         # Step 3: Calculate priority
         priority_score = prioritization_service.calculate_priority(normalized_alert)
-        
+
         # Update task state
         self.update_state(state="PROGRESS", meta={"step": "routing"})
-        
+
         # Step 4: Determine notification channels
         target_channels = routing_service.get_target_channels(normalized_alert)
-        
+
         # Update task state
         self.update_state(state="PROGRESS", meta={"step": "notifying"})
-        
+
         # Step 5: Send notifications
         notification_results = _send_notifications(normalized_alert, target_channels)
-        
+
         return {
             "status": "processed",
             "alert_id": normalized_alert.uid,
@@ -123,7 +123,7 @@ def process_alert_pipeline(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
             "notifications": notification_results,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -137,16 +137,16 @@ def collect_alerts_task(self) -> Dict[str, Any]:
     try:
         # Update task state
         self.update_state(state="PROGRESS", meta={"step": "collecting"})
-        
+
         # Collect alerts
         alerts = _collect_from_sources()
-        
+
         # Process each alert
         results = []
         for alert_data in alerts:
             result = process_alert_pipeline.delay(alert_data)
             results.append(result.id)
-        
+
         return {
             "status": "completed",
             "alerts_collected": len(alerts),
@@ -154,7 +154,7 @@ def collect_alerts_task(self) -> Dict[str, Any]:
             "task_ids": results,
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
