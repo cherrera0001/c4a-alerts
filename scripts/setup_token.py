@@ -9,7 +9,8 @@ import json
 
 def test_token():
     """Probar el token de Telegram"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TOKEN_HERE")
 
     print("🔍 Probando token de Telegram...")
 
@@ -60,7 +61,16 @@ def test_token():
 
 def create_env_file():
     """Crear archivo .env con el token"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear tokens
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno")
+        return False
 
     env_content = f"""# C4A Alerts - Configuración de Telegram
 # Generado automáticamente
@@ -72,7 +82,8 @@ TELEGRAM_TOKEN={token}
 CHAT_ID=your_chat_id_here
 
 # Configuración adicional
-DEBUG=True
+# ⚠️ SEGURIDAD: DEBUG=False en producción
+DEBUG=False
 LOG_LEVEL=INFO
 """
 

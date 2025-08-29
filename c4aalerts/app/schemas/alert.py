@@ -29,6 +29,34 @@ class IOCType(str, Enum):
     TOOL = "tool"
     TACTIC = "tactic"
     TECHNIQUE = "technique"
+    # Nuevos tipos específicos para malware
+    PAYLOAD_DOWNLOADER = "payload_downloader"
+    DROPPER = "dropper"
+    SHELL_SCRIPT = "shell_script"
+    BINARY_PAYLOAD = "binary_payload"
+    COMMAND_AND_CONTROL = "command_and_control"
+
+class AttackTechnique(str, Enum):
+    """MITRE ATT&CK techniques."""
+    T1105 = "T1105"  # Ingress Tool Transfer
+    T1059_004 = "T1059.004"  # Command and Scripting Interpreter: Unix Shell
+    T1059_001 = "T1059.001"  # Command and Scripting Interpreter: PowerShell
+    T1071_001 = "T1071.001"  # Application Layer Protocol: Web Protocols
+    T1566_001 = "T1566.001"  # Phishing: Spearphishing Attachment
+    T1204_002 = "T1204.002"  # User Execution: Malicious File
+    T1036_005 = "T1036.005"  # Masquerading: Match Legitimate Name or Location
+    T1027 = "T1027"  # Obfuscated Files or Information
+    T1071_004 = "T1071.004"  # Application Layer Protocol: DNS
+    T1090 = "T1090"  # Connection Proxy
+
+class MalwareFamily(str, Enum):
+    """Known malware families."""
+    REDTAIL = "redtail"
+    COBALT_STRIKE = "cobalt_strike"
+    METASPLOIT = "metasploit"
+    EMPIRE = "empire"
+    CUSTOM = "custom"
+    UNKNOWN = "unknown"
 
 class IOC(BaseModel):
     """Indicator of Compromise model."""
@@ -37,6 +65,11 @@ class IOC(BaseModel):
     confidence: float = Field(default=0.5, ge=0.0, le=1.0, description="Confidence score")
     tags: list[str] = Field(default_factory=list, description="Additional tags")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    # Nuevos campos para análisis de malware
+    malware_family: MalwareFamily | None = Field(None, description="Identified malware family")
+    attack_techniques: list[AttackTechnique] = Field(default_factory=list, description="MITRE ATT&CK techniques")
+    architecture_targets: list[str] = Field(default_factory=list, description="Target architectures")
+    evasion_techniques: list[str] = Field(default_factory=list, description="Evasion techniques used")
 
 class NormalizedAlert(BaseModel):
     """Normalized alert model."""
@@ -56,6 +89,11 @@ class NormalizedAlert(BaseModel):
     confidence: float = Field(default=0.5, ge=0.0, le=1.0, description="Overall confidence score")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+    # Nuevos campos para análisis de malware
+    malware_analysis: dict[str, Any] = Field(default_factory=dict, description="Malware analysis results")
+    threat_intelligence: dict[str, Any] = Field(default_factory=dict, description="Threat intelligence data")
+    detection_rules: list[str] = Field(default_factory=list, description="Applied detection rules")
+    recommended_actions: list[str] = Field(default_factory=list, description="Recommended response actions")
 
     @validator('content_hash')
     def validate_content_hash(cls, v):

@@ -8,7 +8,17 @@ import json
 
 def configure_bot_commands():
     """Configurar comandos del bot"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear tokens
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno")
+        print("   Configura TELEGRAM_BOT_TOKEN en tu archivo .env")
+        return False
 
     commands = [
         {
@@ -65,7 +75,16 @@ def configure_bot_commands():
 
 def set_bot_description():
     """Configurar descripción del bot"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear tokens
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno")
+        return False
 
     description = """🔒 C4A Alerts - Threat Intelligence Platform
 
@@ -120,7 +139,16 @@ Desarrollado con ❤️ para la comunidad de ciberseguridad"""
 
 def set_bot_short_description():
     """Configurar descripción corta del bot"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear tokens
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno")
+        return False
 
     short_description = "🔒 Plataforma de Threat Intelligence - Alertas de seguridad en tiempo real"
 
@@ -148,7 +176,16 @@ def set_bot_short_description():
 
 def get_bot_info():
     """Obtener información del bot"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear tokens
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno")
+        return False
 
     try:
         response = requests.get(f"https://api.telegram.org/bot{token}/getMe")

@@ -134,7 +134,8 @@ TELEGRAM_TOKEN={bot_token}
 CHAT_ID={chat_id}
 
 # Configuración adicional
-DEBUG=True
+# ⚠️ SEGURIDAD: DEBUG=False en producción
+DEBUG=False
 LOG_LEVEL=INFO
 """
 

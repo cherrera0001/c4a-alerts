@@ -1,48 +1,4 @@
-# dependencies
-node_modules
-.pnp
-.pnp.js
-
-# testing
-coverage
-
-# next.js
-.next/
-out/
-build
-dist
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# Python virtual environments
-venv/
-env/
-.venv/
-.env/
-ENV/
-
-# Python cache and build files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -60,16 +16,208 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# IDE and editor files
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Project specific
+*.log
+logs/
+temp/
+tmp/
+cache/
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.mypy_cache/
+
+# Security and sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+*.pem
+*.key
+*.env
+.env.local
+.env.production
+.env.staging
+.env.development
+secrets.json
+config.json
+credentials.json
+service-account.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# IDE specific
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS generated files
 .DS_Store
@@ -79,3 +227,152 @@ wheels/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Security scan reports
+local_security_scan_*.json
+security_report_*.json
+fluid_attacks_*.json
+
+# Test outputs
+test_results/
+test_reports/
+coverage.xml
+.coverage
+
+# Documentation builds
+docs/_build/
+site/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Ansible
+*.retry
+
+# Local development
+local/
+dev/
+development/
+
+# Production artifacts
+prod/
+production/
+staging/
+
+# Monitoring and logs
+monitoring/
+logs/
+*.log.*
+
+# Backup and archives
+backup/
+archives/
+*.tar.gz
+*.zip
+*.rar
+
+# Cache directories
+.cache/
+cache/
+__pycache__/
+*.pyc
+
+# Jupyter notebooks (if any)
+.ipynb_checkpoints/
+*.ipynb
+
+# Local configuration
+local_config.py
+local_settings.py
+config_local.py
+
+# Test data
+test_data/
+sample_data/
+fixtures/
+
+# Documentation drafts
+docs/drafts/
+docs/temp/
+
+# API documentation
+api_docs/
+swagger/
+
+# Performance profiling
+*.prof
+*.profile
+
+# Memory dumps
+*.dump
+*.dmp
+
+# Crash reports
+crash_reports/
+*.crash
+
+# Temporary uploads
+uploads/
+temp_uploads/
+
+# Session files
+*.session
+*.sess
+
+# Lock files (keep only necessary ones)
+package-lock.json
+yarn.lock
+poetry.lock
+Pipfile.lock
+
+# Local development tools
+.local/
+dev-tools/
+
+# Backup databases
+*.db.backup
+*.sqlite.backup
+
+# Local SSL certificates
+*.crt.local
+*.key.local
+
+# Development certificates
+dev-cert/
+local-cert/
+
+# Test certificates
+test-cert/
+*.test.crt
+*.test.key
+
+# Local secrets (never commit these)
+secrets/
+.secrets/
+local-secrets/
+
+# Environment specific
+.env.*.local
+.env.local.*
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE workspace files
+*.code-workspace
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# Project specific ignores
+# Add any project-specific files or directories here

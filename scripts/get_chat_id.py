@@ -8,7 +8,16 @@ import json
 
 def get_chat_id():
     """Obtener Chat ID del usuario"""
-    token = "7330329737:AAGubXJVl7x4KgmaJ916V0HjNm_ErMQr-_c"
+    # ⚠️ CRÍTICO: Usar variable de entorno, NUNCA hardcodear tokens
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN no configurado en variables de entorno")
+        return False
 
     try:
         print("🔍 Consultando mensajes recientes...")

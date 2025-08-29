@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+s#!/usr/bin/env python3
 """
 Configuración centralizada para C4A Alerts
 Maneja variables de entorno de forma segura
@@ -38,6 +38,9 @@ class Config:
 
     # Cloud Function Configuration
     WEBHOOK_URL: str = os.getenv('WEBHOOK_URL', '')
+
+    # Security Analysis Configuration
+    FLUID_ATTACKS_TOKEN: str = os.getenv('FLUID_ATTACKS_TOKEN', '')
 
     @classmethod
     def validate_telegram(cls) -> bool:

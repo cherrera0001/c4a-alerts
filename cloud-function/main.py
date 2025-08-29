@@ -26,7 +26,8 @@ db = firestore.Client()
 
 def generate_content_hash(content: str) -> str:
     """Generate a hash for content deduplication."""
-    return hashlib.md5(content.encode()).hexdigest()
+    # ⚠️ SEGURIDAD: Usar SHA-256 en lugar de MD5
+    return hashlib.sha256(content.encode()).hexdigest()
 
 @functions_framework.http
 def process_alert(request):
